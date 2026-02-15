@@ -1,220 +1,869 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Quick Statistics — Enter Numbers</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Quick Statistics — Enter Numbers</title>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <!-- Chart.js (histogram + density) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 
-<style>
-:root{
-  --bg:#0b0f17; --card:#121a28; --text:#e8eefc; --muted:#a9b6d3; --line:#23304a;
-  --btn:#1f6feb; --ok:#2ea043;
-}
+  <style>
+    :root{
+      --bg:#0b0f17; --card:#121a28; --text:#e8eefc; --muted:#a9b6d3; --line:#23304a;
+      --btn:#1f6feb; --ok:#2ea043;
+    }
+    body{ margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; background:var(--bg); color:var(--text); }
+    .wrap{ max-width:1280px; margin:0 auto; padding:18px; }
+    h1{ font-size:22px; margin:6px 0 10px; }
+    .sub{ color:var(--muted); margin:0 0 16px; }
 
-body{
-  margin:0;
-  font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
-  background:var(--bg);
-  color:var(--text);
-}
+    .grid2{ display:grid; grid-template-columns:1.1fr 0.9fr; gap:14px; }
+    .grid3{
+      display:grid;
+      grid-template-columns: 0.70fr 1.80fr 0.85fr; /* boxplot gets most width */
+      gap:14px;
+      align-items:start;
+    }
+    @media (max-width:980px){
+      .grid2{ grid-template-columns:1fr; }
+      .grid3{ grid-template-columns:1fr; }
+    }
 
-.wrap{ max-width:1280px; margin:0 auto; padding:18px; }
-h1{ font-size:22px; margin:6px 0 10px; }
-.sub{ color:var(--muted); margin:0 0 16px; }
+    .card{ background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px; box-shadow:0 8px 20px rgba(0,0,0,.25); }
+    textarea{
+      width:100%; min-height:160px; resize:vertical; background:#0e1524; border:1px solid var(--line);
+      color:var(--text); border-radius:12px; padding:12px; font-size:14px; line-height:1.35; outline:none;
+    }
+    .row{ display:flex; gap:10px; flex-wrap:wrap; margin-top:10px; align-items:center; }
+    button{ border:1px solid var(--line); background:#0e1524; color:var(--text); padding:10px 12px; border-radius:12px; cursor:pointer; }
+    button.primary{ background:var(--btn); border-color:transparent; }
+    button.success{ background:var(--ok); border-color:transparent; }
+    button:hover{ filter:brightness(1.08); }
 
-.grid2{ display:grid; grid-template-columns:1.1fr 0.9fr; gap:14px; }
-.grid3{
-  display:grid;
-  grid-template-columns: 0.70fr 1.80fr 0.85fr;
-  gap:14px;
-  align-items:start;
-}
+    .meta{ margin-top:10px; color:var(--muted); font-size:13px; }
+    .small{ font-size:13px; color:var(--muted); }
+    .titleRow{ display:flex; align-items:baseline; justify-content:space-between; gap:10px; }
+    .toast{ margin-left:auto; color:var(--muted); font-size:13px; }
+    .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
 
-@media (max-width:980px){
-  .grid2{ grid-template-columns:1fr; }
-  .grid3{ grid-template-columns:1fr; }
-}
+    .stats{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px; }
+    @media (max-width:520px){ .stats{ grid-template-columns:1fr; } }
+    .kv{ border:1px solid var(--line); border-radius:12px; padding:10px; background:#0e1524; }
+    .kv .k{ color:var(--muted); font-size:12px; }
+    .kv .v{ font-size:16px; margin-top:2px; }
 
-.card{
-  background:var(--card);
-  border:1px solid var(--line);
-  border-radius:14px;
-  padding:14px;
-  box-shadow:0 8px 20px rgba(0,0,0,.25);
-}
+    .note{ margin-top:12px; padding:10px 12px; border-radius:12px; border:1px solid var(--line); background:#0e1524; color:var(--text); }
+    .note .title{ font-weight:650; margin-bottom:6px; }
 
-textarea{
-  width:100%;
-  min-height:160px;
-  resize:vertical;
-  background:#0e1524;
-  border:1px solid var(--line);
-  color:var(--text);
-  border-radius:12px;
-  padding:12px;
-  font-size:14px;
-  line-height:1.35;
-  outline:none;
-}
+    #hist{ height:150px !important; }
+    #density{ height:130px !important; }
 
-.row{
-  display:flex;
-  gap:10px;
-  flex-wrap:wrap;
-  margin-top:10px;
-  align-items:center;
-}
+    /* Boxplot canvas */
+    #boxCanvas{ width:100%; height:220px; display:block; touch-action:none; }
 
-button{
-  border:1px solid var(--line);
-  background:#0e1524;
-  color:var(--text);
-  padding:10px 12px;
-  border-radius:12px;
-  cursor:pointer;
-}
+    /* Tooltip */
+    .tip{
+      position: fixed;
+      z-index: 9999;
+      display: none;
+      max-width: 340px;
+      background: #0e1524;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 10px 12px;
+      color: var(--text);
+      box-shadow: 0 12px 28px rgba(0,0,0,.35);
+      pointer-events: none;
+      font-size: 12.5px;
+      line-height: 1.25;
+    }
+    .tip .t{ font-weight: 650; margin-bottom: 6px; }
+    .tip .m{ color: var(--muted); }
+    .tip .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
 
-button.primary{ background:var(--btn); border-color:transparent; }
-button.success{ background:var(--ok); border-color:transparent; }
-button:hover{ filter:brightness(1.08); }
-
-/* 🔵 PayPal button style */
-a.btnLike{
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  text-decoration:none;
-  border:1px solid var(--line);
-  background:#0e1524;
-  color:var(--text);
-  padding:10px 12px;
-  border-radius:12px;
-  cursor:pointer;
-  white-space:nowrap;
-}
-a.btnLike.primary{
-  background:var(--btn);
-  border-color:transparent;
-}
-a.btnLike:hover{
-  filter:brightness(1.08);
-}
-
-.meta{ margin-top:10px; color:var(--muted); font-size:13px; }
-.small{ font-size:13px; color:var(--muted); }
-
-.stats{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:10px;
-  margin-top:10px;
-}
-
-@media (max-width:520px){
-  .stats{ grid-template-columns:1fr; }
-}
-
-.kv{
-  border:1px solid var(--line);
-  border-radius:12px;
-  padding:10px;
-  background:#0e1524;
-}
-
-.kv .k{ color:var(--muted); font-size:12px; }
-.kv .v{ font-size:16px; margin-top:2px; }
-</style>
+    /* -------------------- ADDED: PayPal donate button styled like buttons -------------------- */
+    a.btnLike{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+      text-decoration:none;
+      border:1px solid var(--line);
+      background:#0e1524;
+      color:var(--text);
+      padding:10px 12px;
+      border-radius:12px;
+      cursor:pointer;
+      user-select:none;
+      white-space:nowrap;
+    }
+    a.btnLike.primary{ background:var(--btn); border-color:transparent; }
+    a.btnLike:hover{ filter:brightness(1.08); }
+  </style>
 </head>
 
 <body>
-<div class="wrap">
-<h1>Enter numbers → histogram + density + Tukey boxplot</h1>
-<p class="sub">
-Paste numbers below (comma, semicolon, whitespace, or newline separated).
-</p>
+  <div class="wrap">
+    <h1>Enter numbers → histogram + density + Tukey boxplot</h1>
+    <p class="sub">
+      Paste numbers below (separators: comma, semicolon, whitespace, or newline). All computations run locally in your browser.
+    </p>
 
-<div class="grid2">
-<div class="card">
+    <div class="grid2">
+      <div class="card">
+        <label for="data"><strong>Data</strong></label>
+        <textarea id="data" placeholder="Example: 1, 2, 2, 3, 3, 4, 100"></textarea>
 
-<label for="data"><strong>Data</strong></label>
-<textarea id="data" placeholder="Example: 1, 2, 2, 3, 3, 4, 100"></textarea>
+        <div class="row">
+          <button class="primary" id="analyze">Analyze</button>
+          <button id="example">Load example</button>
+          <button id="clear">Clear</button>
+          <button class="success" id="copyReport" disabled>Copy report</button>
 
-<div class="row">
-<button class="primary" id="analyze">Analyze</button>
-<button id="example">Load example</button>
-<button id="clear">Clear</button>
-<button class="success" id="copyReport" disabled>Copy report</button>
+          <!-- -------------------- ADDED: PayPal donate button -------------------- -->
+          <a
+            class="btnLike primary"
+            href="https://www.paypal.me/JHolm169"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Donate via PayPal"
+            title="Donate via PayPal"
+          >
+            Donate (PayPal)
+          </a>
 
-<!-- 🔵 PAYPAL DONATE BUTTON -->
-<a
-  class="btnLike primary"
-  href="https://www.paypal.me/JHolm169"
-  target="_blank"
-  rel="noopener noreferrer"
-  aria-label="Donate via PayPal"
-  title="Donate via PayPal">
-  Donate (PayPal)
-</a>
+          <span class="toast" id="toast">—</span>
+        </div>
 
-<span class="toast" id="toast">—</span>
-</div>
+        <div class="meta" id="parseInfo">—</div>
+      </div>
 
-<div class="meta" id="parseInfo">—</div>
-</div>
+      <div class="card">
+        <div class="titleRow">
+          <strong>Histogram</strong>
+          <span class="small">Binning: Freedman–Diaconis (Tukey IQR; fallback: √n)</span>
+        </div>
+        <canvas id="hist" height="150"></canvas>
+      </div>
+    </div>
 
-<div class="card">
-<strong>Histogram</strong>
-<canvas id="hist" height="150"></canvas>
-</div>
-</div>
+    <div style="height:14px"></div>
 
-<div style="height:14px"></div>
+    <div class="grid3">
+      <div class="card">
+        <div class="titleRow">
+          <strong>Density</strong>
+          <span class="small">KDE (Silverman bandwidth)</span>
+        </div>
+        <canvas id="density" height="130"></canvas>
+      </div>
 
-<div class="grid3">
-<div class="card">
-<strong>Density</strong>
-<canvas id="density" height="130"></canvas>
-</div>
+      <div class="card">
+        <div class="titleRow">
+          <strong>Tukey boxplot</strong>
+          <span class="small">hover/tap: box, outliers, whisker tips</span>
+        </div>
+        <canvas id="boxCanvas" width="1200" height="220"></canvas>
+        <div class="small" style="margin-top:10px;">
+          Quartiles: Tukey (median of halves). Outliers: outside Tukey fences.
+        </div>
+      </div>
 
-<div class="card">
-<strong>Tukey boxplot</strong>
-<canvas id="boxCanvas" width="1200" height="220"></canvas>
-</div>
+      <div class="card">
+        <strong>Summary statistics</strong>
+        <div class="stats" id="stats"></div>
+        <div class="note" id="interpretation" style="display:none;"></div>
+        <div class="small" style="margin-top:10px;">
+          Tip: add a single extreme value and compare how the <em>mean</em> changes while the <em>median</em> remains stable.
+        </div>
+      </div>
+    </div>
 
-<div class="card">
-<strong>Summary statistics</strong>
-<div class="stats" id="stats"></div>
-</div>
-</div>
+    <p class="small" style="margin-top:14px;">
+      This is a single-file static page (no backend required). It can be hosted for free on GitHub Pages / Cloudflare Pages / Netlify.
+    </p>
+  </div>
 
-<p class="small" style="margin-top:14px;">
-This is a static single-file page. You can host it free on GitHub Pages / Netlify.
-</p>
-
-</div>
+  <div id="boxTip" class="tip"></div>
 
 <script>
-function parseNumbers(raw){
-  const tokens = raw.split(/[,\s;]+/).filter(Boolean);
-  const nums = [];
-  let bad = 0;
-  for(const t of tokens){
-    const n = Number(t);
-    if(Number.isFinite(n)) nums.push(n);
-    else bad++;
+  // -------------------- Formatting --------------------
+  const fmt = (x) => {
+    if (!Number.isFinite(x)) return '—';
+    const ax = Math.abs(x);
+    const s = (ax >= 1000 ? x.toFixed(2) : x.toFixed(4));
+    return s.replace(/\.?0+$/,'');
+  };
+
+  // -------------------- Parsing --------------------
+  function parseNumbers(raw) {
+    const cleaned = raw
+      .replace(/[，]/g, ',')
+      .replace(/[;]/g, ',')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    if (!cleaned) return { nums: [], bad: 0 };
+
+    const tokens = cleaned.split(/[,\s]+/).filter(Boolean);
+    let bad = 0;
+    const nums = [];
+    for (const t of tokens) {
+      const n = Number(t.replace(',', '.'));
+      if (Number.isFinite(n)) nums.push(n);
+      else bad++;
+    }
+    return { nums, bad };
   }
-  return {nums,bad};
-}
 
-document.getElementById('analyze').addEventListener('click',()=>{
-  const {nums,bad}=parseNumbers(document.getElementById('data').value);
-  document.getElementById('parseInfo').textContent =
-    nums.length ? `Parsed ${nums.length} numbers. Ignored ${bad}.`
-                : "Enter numeric values.";
-});
+  // -------------------- Core stats --------------------
+  function mean(a){ return a.reduce((s,x)=>s+x,0)/a.length; }
+
+  function median(sorted){
+    const n = sorted.length;
+    const mid = Math.floor(n/2);
+    return n % 2 ? sorted[mid] : (sorted[mid-1] + sorted[mid]) / 2;
+  }
+
+  // Tukey-style quartiles ("median of halves")
+  function tukeyQuartiles(sorted){
+    const n = sorted.length;
+    if (n === 0) return { q1: NaN, q3: NaN };
+    const lower = sorted.slice(0, Math.floor(n/2));
+    const upper = sorted.slice(Math.ceil(n/2));
+    return { q1: median(lower), q3: median(upper) };
+  }
+
+  function sampleStd(a){
+    const n = a.length;
+    if (n < 2) return NaN;
+    const m = mean(a);
+    let s2 = 0;
+    for (const x of a) s2 += (x-m)*(x-m);
+    return Math.sqrt(s2/(n-1));
+  }
+
+  function freedmanDiaconisBins(sorted){
+    const n = sorted.length;
+    if (n < 2) return { bins: 1 };
+    const { q1, q3 } = tukeyQuartiles(sorted);
+    const iqr = q3 - q1;
+    const range = sorted[n-1] - sorted[0];
+    if (!(iqr > 0) || !(range > 0)) return { bins: Math.ceil(Math.sqrt(n)) };
+    const h = 2 * iqr * Math.pow(n, -1/3);
+    const bins = Math.max(1, Math.ceil(range / h));
+    return { bins };
+  }
+
+  function histogram(sorted, bins){
+    const n = sorted.length;
+    const min = sorted[0], max = sorted[n-1];
+    if (min === max) return { labels:[`${fmt(min)}`], counts:[n] };
+
+    const width = (max - min) / bins;
+    const counts = new Array(bins).fill(0);
+
+    for (const x of sorted) {
+      const idx = Math.min(bins-1, Math.floor((x - min) / width));
+      counts[idx]++;
+    }
+
+    const labels = [];
+    for (let i=0;i<bins;i++){
+      const a = min + i*width;
+      const b = a + width;
+      labels.push(`${fmt(a)}–${fmt(b)}`);
+    }
+    return { labels, counts };
+  }
+
+  function skewSummary(sorted){
+    const m = mean(sorted);
+    const med = median(sorted);
+    const min = sorted[0], max = sorted[sorted.length-1];
+    const left = med - min;
+    const right = max - med;
+    const delta = m - med;
+    const tailRatio = right / (left === 0 ? 1e-9 : left);
+
+    if (Math.abs(delta) < 1e-12 && Math.abs(tailRatio - 1) < 0.15) {
+      return { label:'approximately symmetric', short:'approximately symmetric', code:'sym' };
+    }
+    if (delta > 0 && tailRatio > 1.2) return { label:'right-skewed', short:'right-skewed', code:'right' };
+    if (delta < 0 && tailRatio < 0.8) return { label:'left-skewed', short:'left-skewed', code:'left' };
+    if (delta > 0) return { label:'likely right-skewed', short:'likely right-skewed', code:'right' };
+    if (delta < 0) return { label:'likely left-skewed', short:'likely left-skewed', code:'left' };
+    return { label:'no clear skewness pattern', short:'no clear skewness pattern', code:'unclear' };
+  }
+
+  // -------------------- KDE --------------------
+  function kdeGaussian(x, xi, h) {
+    const z = (x - xi) / h;
+    return Math.exp(-0.5 * z * z) / Math.sqrt(2 * Math.PI);
+  }
+
+  function densityKDE(sorted) {
+    const n = sorted.length;
+    const min = sorted[0], max = sorted[n - 1];
+    if (min === max) return { xs: [min], ys: [1] };
+
+    const sd = sampleStd(sorted);
+    let h = (Number.isFinite(sd) && sd > 0) ? 1.06 * sd * Math.pow(n, -1/5) : (max - min) / 10;
+    if (!Number.isFinite(h) || h <= 0) h = (max - min) / 10;
+
+    const steps = 140;
+    const xs = [];
+    const ys = [];
+
+    for (let i = 0; i <= steps; i++) {
+      const x = min + (max - min) * (i / steps);
+      let s = 0;
+      for (const xi of sorted) s += kdeGaussian(x, xi, h);
+      const y = s / (n * h);
+      xs.push(x);
+      ys.push(y);
+    }
+    return { xs, ys };
+  }
+
+  // -------------------- Boxplot drawing + hit geometry --------------------
+  // We store everything needed for tooltip hit-testing.
+  let BOX_GEOM = null;
+
+  function drawBoxplot(canvas, summary){
+    const ctx = canvas.getContext('2d');
+
+    // HiDPI crispness
+    const cssW = canvas.clientWidth || canvas.width;
+    const cssH = canvas.clientHeight || canvas.height;
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.round(cssW * dpr);
+    canvas.height = Math.round(cssH * dpr);
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+
+    const w = cssW, h = cssH;
+    ctx.clearRect(0,0,w,h);
+
+    const { n, min, max, q1, q3, iqr, medianVal, lo, hi, outliers } = summary;
+    BOX_GEOM = null;
+
+    if (!Number.isFinite(min) || !Number.isFinite(max) || min === max){
+      ctx.fillStyle = 'rgba(232,238,252,0.85)';
+      ctx.font = '14px system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif';
+      ctx.fillText('Not enough variation to draw a boxplot.', 14, 22);
+      return;
+    }
+
+    const padX = 52;
+    const midY = Math.round(h * 0.50);
+
+    const scaleMin = min;
+    const scaleMax = max;
+
+    const xMap = (v) => {
+      const t = (v - scaleMin) / (scaleMax - scaleMin);
+      return padX + t * (w - 2*padX);
+    };
+
+    // Whiskers (Tukey fences clipped to data)
+    const whiskerLow = Math.max(min, lo);
+    const whiskerHigh = Math.min(max, hi);
+
+    const xWL = xMap(whiskerLow);
+    const xWH = xMap(whiskerHigh);
+    const xQ1 = xMap(q1);
+    const xQ3 = xMap(q3);
+    const xMed = xMap(medianVal);
+
+    // Baseline
+    ctx.strokeStyle = 'rgba(169,182,211,0.22)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(padX, midY);
+    ctx.lineTo(w - padX, midY);
+    ctx.stroke();
+
+    // Box
+    const boxH = Math.min(70, Math.max(56, Math.round(h * 0.32)));
+    const yTop = midY - boxH/2;
+    const yBot = midY + boxH/2;
+
+    ctx.fillStyle = 'rgba(31,111,235,0.18)';
+    ctx.strokeStyle = 'rgba(31,111,235,0.92)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.rect(xQ1, yTop, (xQ3 - xQ1), boxH);
+    ctx.fill();
+    ctx.stroke();
+
+    // Median line
+    ctx.strokeStyle = 'rgba(232,238,252,0.95)';
+    ctx.lineWidth = 2.4;
+    ctx.beginPath();
+    ctx.moveTo(xMed, yTop);
+    ctx.lineTo(xMed, yBot);
+    ctx.stroke();
+
+    // Whiskers
+    ctx.strokeStyle = 'rgba(169,182,211,0.90)';
+    ctx.lineWidth = 2.2;
+
+    ctx.beginPath();
+    ctx.moveTo(xQ1, midY);
+    ctx.lineTo(xWL, midY);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(xQ3, midY);
+    ctx.lineTo(xWH, midY);
+    ctx.stroke();
+
+    // Caps
+    const capH = 26;
+    const yCapTop = midY - capH/2;
+    const yCapBot = midY + capH/2;
+
+    ctx.beginPath();
+    ctx.moveTo(xWL, yCapTop);
+    ctx.lineTo(xWL, yCapBot);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(xWH, yCapTop);
+    ctx.lineTo(xWH, yCapBot);
+    ctx.stroke();
+
+    // Outliers (visible)
+    const outR = 6;
+    ctx.fillStyle = 'rgba(232,238,252,0.98)';
+    ctx.strokeStyle = 'rgba(232,238,252,0.55)';
+    ctx.lineWidth = 1;
+
+    const outPoints = [];
+    for (const v of outliers){
+      const x = xMap(v);
+      outPoints.push({ x, y: midY, v });
+      ctx.beginPath();
+      ctx.arc(x, midY, outR, 0, Math.PI*2);
+      ctx.fill();
+      ctx.stroke();
+    }
+
+    // Labels
+    ctx.fillStyle = 'rgba(169,182,211,0.90)';
+    ctx.font = '12px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace';
+    ctx.fillText(`min ${fmt(min)}`, 10, h - 12);
+    const maxLabel = `max ${fmt(max)}`;
+    const maxW = ctx.measureText(maxLabel).width;
+    ctx.fillText(maxLabel, w - 10 - maxW, h - 12);
+
+    // Save geometry for tooltip hit-testing
+    BOX_GEOM = {
+      padX, midY,
+      boxRect: { x1: xQ1, x2: xQ3, y1: yTop, y2: yBot },
+      outR,
+      outPoints, // {x,y,v}
+      whisker: {
+        low:  { x: xWL, yTop: yCapTop, yBot: yCapBot, value: whiskerLow, fence: lo },
+        high: { x: xWH, yTop: yCapTop, yBot: yCapBot, value: whiskerHigh, fence: hi }
+      },
+      summary: { n, q1, q3, iqr, medianVal, outliersCount: outliers.length, lo, hi }
+    };
+  }
+
+  // -------------------- Tooltip logic --------------------
+  const tip = document.getElementById('boxTip');
+
+  function showTip(clientX, clientY, contentHTML){
+    tip.innerHTML = contentHTML;
+    const pad = 12;
+    tip.style.display = 'block';
+
+    const rect = tip.getBoundingClientRect();
+    let x = clientX + 14;
+    let y = clientY + 14;
+
+    if (x + rect.width + pad > window.innerWidth) x = clientX - rect.width - 14;
+    if (y + rect.height + pad > window.innerHeight) y = clientY - rect.height - 14;
+
+    tip.style.left = `${Math.max(pad, x)}px`;
+    tip.style.top  = `${Math.max(pad, y)}px`;
+  }
+
+  function hideTip(){ tip.style.display = 'none'; }
+
+  function canvasClientToLocal(canvas, clientX, clientY){
+    const r = canvas.getBoundingClientRect();
+    const x = (clientX - r.left) * (canvas.clientWidth / r.width);
+    const y = (clientY - r.top)  * (canvas.clientHeight / r.height);
+    return { x, y };
+  }
+
+  function dist2(ax, ay, bx, by){
+    const dx = ax - bx, dy = ay - by;
+    return dx*dx + dy*dy;
+  }
+
+  // Priority: outlier point > whisker tip > box area
+  function hitTestBoxplot(canvas, clientX, clientY){
+    if (!BOX_GEOM) return { kind: 'none' };
+    const { x, y } = canvasClientToLocal(canvas, clientX, clientY);
+    const g = BOX_GEOM;
+
+    // 1) Outliers: check nearest within radius tolerance
+    const tol = 6; // extra pixels tolerance
+    const r = g.outR + tol;
+    const r2 = r*r;
+
+    let best = null;
+    for (const p of g.outPoints){
+      const d = dist2(x, y, p.x, p.y);
+      if (d <= r2 && (!best || d < best.d)) best = { kind:'outlier', d, v: p.v };
+    }
+    if (best) return best;
+
+    // 2) Whisker tips (caps): check near xWL/xWH and within cap y-range (+tolerance)
+    const xTol = 10;
+    const yTol = 8;
+
+    const wl = g.whisker.low;
+    const wh = g.whisker.high;
+
+    const hitWhiskerLow =
+      Math.abs(x - wl.x) <= xTol &&
+      y >= (wl.yTop - yTol) && y <= (wl.yBot + yTol);
+
+    if (hitWhiskerLow) {
+      return { kind:'whisker', side:'lower', value: wl.value, fence: wl.fence };
+    }
+
+    const hitWhiskerHigh =
+      Math.abs(x - wh.x) <= xTol &&
+      y >= (wh.yTop - yTol) && y <= (wh.yBot + yTol);
+
+    if (hitWhiskerHigh) {
+      return { kind:'whisker', side:'upper', value: wh.value, fence: wh.fence };
+    }
+
+    // 3) Box area
+    const b = g.boxRect;
+    const pad = 6;
+    const hitBox = (x >= b.x1 - pad && x <= b.x2 + pad && y >= b.y1 - pad && y <= b.y2 + pad);
+    if (hitBox) return { kind:'box' };
+
+    return { kind:'none' };
+  }
+
+  function tipHTML_box(){
+    const s = BOX_GEOM.summary;
+    return `
+      <div class="t">Boxplot summary</div>
+      <div><span class="m">Median:</span> <span class="mono">${fmt(s.medianVal)}</span></div>
+      <div class="m" style="margin-top:6px;">
+        n = <span class="mono">${s.n}</span>,
+        Q1 = <span class="mono">${fmt(s.q1)}</span>,
+        Q3 = <span class="mono">${fmt(s.q3)}</span>,
+        IQR = <span class="mono">${fmt(s.iqr)}</span>,
+        outliers = <span class="mono">${s.outliersCount}</span>
+      </div>
+    `;
+  }
+
+  function tipHTML_outlier(v){
+    const s = BOX_GEOM.summary;
+    return `
+      <div class="t">Outlier</div>
+      <div><span class="m">Value:</span> <span class="mono">${fmt(v)}</span></div>
+      <div class="m" style="margin-top:6px;">
+        Tukey fences: <span class="mono">&lt; ${fmt(s.lo)}</span> or <span class="mono">&gt; ${fmt(s.hi)}</span>
+      </div>
+    `;
+  }
+
+  function tipHTML_whisker(side, value, fence){
+    const label = side === 'lower' ? 'Lower whisker' : 'Upper whisker';
+    const fenceLabel = side === 'lower' ? 'Lower fence' : 'Upper fence';
+    return `
+      <div class="t">${label}</div>
+      <div><span class="m">Whisker value:</span> <span class="mono">${fmt(value)}</span></div>
+      <div class="m" style="margin-top:6px;">
+        ${fenceLabel}: <span class="mono">${fmt(fence)}</span>
+      </div>
+    `;
+  }
+
+  function attachBoxInteractions(){
+    const canvas = document.getElementById('boxCanvas');
+
+    const handlePointer = (clientX, clientY) => {
+      const hit = hitTestBoxplot(canvas, clientX, clientY);
+      if (hit.kind === 'none') { hideTip(); return; }
+      if (hit.kind === 'outlier') showTip(clientX, clientY, tipHTML_outlier(hit.v));
+      else if (hit.kind === 'whisker') showTip(clientX, clientY, tipHTML_whisker(hit.side, hit.value, hit.fence));
+      else showTip(clientX, clientY, tipHTML_box());
+    };
+
+    canvas.addEventListener('mousemove', (e) => handlePointer(e.clientX, e.clientY));
+    canvas.addEventListener('mouseleave', () => hideTip());
+
+    const onTouchMove = (ev) => {
+      if (!ev.touches || ev.touches.length === 0) return;
+      const t = ev.touches[0];
+      const hit = hitTestBoxplot(canvas, t.clientX, t.clientY);
+      if (hit.kind === 'none') { hideTip(); return; }
+      ev.preventDefault();
+      if (hit.kind === 'outlier') showTip(t.clientX, t.clientY, tipHTML_outlier(hit.v));
+      else if (hit.kind === 'whisker') showTip(t.clientX, t.clientY, tipHTML_whisker(hit.side, hit.value, hit.fence));
+      else showTip(t.clientX, t.clientY, tipHTML_box());
+    };
+
+    canvas.addEventListener('touchstart', onTouchMove, { passive:false });
+    canvas.addEventListener('touchmove',  onTouchMove, { passive:false });
+    canvas.addEventListener('touchend',   () => hideTip());
+    canvas.addEventListener('touchcancel',() => hideTip());
+  }
+
+  // -------------------- UI + Charts --------------------
+  const elData = document.getElementById('data');
+  const elParseInfo = document.getElementById('parseInfo');
+  const elStats = document.getElementById('stats');
+  const elInterp = document.getElementById('interpretation');
+  const elToast = document.getElementById('toast');
+  const btnCopy = document.getElementById('copyReport');
+
+  let chartHist, chartDensity;
+  let lastReportText = '';
+  let lastHasData = false;
+
+  function statCard(k, v){
+    const div = document.createElement('div');
+    div.className = 'kv';
+    div.innerHTML = `<div class="k">${k}</div><div class="v">${v}</div>`;
+    return div;
+  }
+
+  function setToast(msg){ elToast.textContent = msg; }
+
+  function buildReportText(summary){
+    const { n, min, max, meanVal, medianVal, sd, q1, q3, iqr, lo, hi, outliersCount, skew } = summary;
+    const sdPart = Number.isFinite(sd) ? ` (SD = ${fmt(sd)})` : '';
+    const outPart = (outliersCount > 0)
+      ? ` Outliers were detected using Tukey’s rule (values < ${fmt(lo)} or > ${fmt(hi)}; count = ${outliersCount}).`
+      : ` No outliers were detected using Tukey’s rule (fences: < ${fmt(lo)} or > ${fmt(hi)}).`;
+
+    return (
+      `Dataset summary (n = ${n}). The distribution is ${skew.short}. ` +
+      `Median = ${fmt(medianVal)} (IQR = ${fmt(iqr)}; Q1 = ${fmt(q1)}, Q3 = ${fmt(q3)}). ` +
+      `Mean = ${fmt(meanVal)}${sdPart}. Range: min = ${fmt(min)}, max = ${fmt(max)}.` +
+      outPart
+    );
+  }
+
+  function render(nums, bad){
+    const boxCanvas = document.getElementById('boxCanvas');
+
+    if (nums.length === 0){
+      elParseInfo.textContent = 'Enter at least one numeric value.';
+      elStats.innerHTML = '';
+      elInterp.style.display = 'none';
+      if (chartHist) chartHist.destroy();
+      if (chartDensity) chartDensity.destroy();
+      chartHist = chartDensity = null;
+      boxCanvas.getContext('2d').clearRect(0,0,boxCanvas.width,boxCanvas.height);
+      BOX_GEOM = null;
+      hideTip();
+      setToast('—');
+      btnCopy.disabled = true;
+      lastReportText = '';
+      lastHasData = false;
+      return;
+    }
+
+    const sorted = [...nums].sort((a,b)=>a-b);
+    const n = sorted.length;
+
+    const min = sorted[0], max = sorted[n-1];
+    const meanVal = mean(sorted);
+    const medianVal = median(sorted);
+    const sd = sampleStd(sorted);
+
+    const { q1, q3 } = tukeyQuartiles(sorted);
+    const iqr = q3 - q1;
+
+    const lo = q1 - 1.5*iqr;
+    const hi = q3 + 1.5*iqr;
+    const outliers = sorted.filter(x => x < lo || x > hi);
+
+    const skew = skewSummary(sorted);
+
+    elParseInfo.textContent = `Parsed ${n} number(s). Ignored ${bad} invalid token(s).`;
+
+    // Stats cards
+    elStats.innerHTML = '';
+    elStats.appendChild(statCard('n', `${n}`));
+    elStats.appendChild(statCard('min', `${fmt(min)}`));
+    elStats.appendChild(statCard('max', `${fmt(max)}`));
+    elStats.appendChild(statCard('mean', `${fmt(meanVal)}`));
+    elStats.appendChild(statCard('median', `${fmt(medianVal)}`));
+    elStats.appendChild(statCard('sample SD', `${Number.isFinite(sd) ? fmt(sd) : '—'}`));
+    elStats.appendChild(statCard('Q1 (25%)', `${fmt(q1)}`));
+    elStats.appendChild(statCard('Q3 (75%)', `${fmt(q3)}`));
+    elStats.appendChild(statCard('IQR', `${fmt(iqr)}`));
+    elStats.appendChild(statCard('Tukey outliers', outliers.length ? `${outliers.length}` : '0'));
+
+    // Interpretation
+    const meanVsMed = (meanVal > medianVal)
+      ? 'Mean > median, consistent with a right-tailed influence of larger values.'
+      : (meanVal < medianVal)
+        ? 'Mean < median, consistent with a left-tailed influence of smaller values.'
+        : 'Mean ≈ median, consistent with approximate symmetry.';
+
+    const outTxt = outliers.length
+      ? `Outliers (Tukey fences): values < ${fmt(lo)} or > ${fmt(hi)} (count = ${outliers.length}).`
+      : `No outliers detected by Tukey fences (< ${fmt(lo)} or > ${fmt(hi)}).`;
+
+    elInterp.style.display = 'block';
+    elInterp.innerHTML = `
+      <div class="title">Interpretation</div>
+      <div>• Distribution: <span class="mono">${skew.label}</span>.</div>
+      <div>• ${meanVsMed}</div>
+      <div>• ${outTxt}</div>
+    `;
+
+    // Histogram
+    const fd = freedmanDiaconisBins(sorted);
+    const bins = Math.min(60, Math.max(1, fd.bins));
+    const hist = histogram(sorted, bins);
+
+    const ctxH = document.getElementById('hist');
+    if (chartHist) chartHist.destroy();
+    chartHist = new Chart(ctxH, {
+      type: 'bar',
+      data: {
+        labels: hist.labels,
+        datasets: [{
+          label: 'Count',
+          data: hist.counts,
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { display: false } },
+          y: { beginAtZero: true }
+        }
+      }
+    });
+
+    // Density
+    const den = densityKDE(sorted);
+    const ctxD = document.getElementById('density');
+    if (chartDensity) chartDensity.destroy();
+    chartDensity = new Chart(ctxD, {
+      type: 'line',
+      data: {
+        labels: den.xs.map(x => fmt(x)),
+        datasets: [{
+          label: 'Density',
+          data: den.ys,
+          pointRadius: 0,
+          borderWidth: 2,
+          tension: 0.25
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { display: false } },
+          y: { beginAtZero: true }
+        }
+      }
+    });
+
+    // Boxplot (with full hit-geometry)
+    drawBoxplot(boxCanvas, {
+      n, min, max, q1, q3, iqr, medianVal,
+      lo, hi, outliers
+    });
+
+    // Report copy
+    lastReportText = buildReportText({
+      n, min, max, meanVal, medianVal, sd, q1, q3, iqr,
+      lo, hi, outliersCount: outliers.length, skew
+    });
+    lastHasData = true;
+    btnCopy.disabled = false;
+    setToast('Ready.');
+  }
+
+  // -------------------- Clipboard --------------------
+  async function copyToClipboard(text){
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch (e) {
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.setAttribute('readonly', '');
+        ta.style.position = 'absolute';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.select();
+        const ok = document.execCommand('copy');
+        document.body.removeChild(ta);
+        return ok;
+      } catch {
+        return false;
+      }
+    }
+  }
+
+  // -------------------- Events --------------------
+  document.getElementById('analyze').addEventListener('click', () => {
+    const { nums, bad } = parseNumbers(elData.value);
+    render(nums, bad);
+  });
+
+  document.getElementById('example').addEventListener('click', () => {
+    elData.value = "1, 2, 2, 3, 3, 4, 100\n5 6 7 8 9\n10";
+    const { nums, bad } = parseNumbers(elData.value);
+    render(nums, bad);
+  });
+
+  document.getElementById('clear').addEventListener('click', () => {
+    elData.value = "";
+    render([], 0);
+  });
+
+  btnCopy.addEventListener('click', async () => {
+    if (!lastHasData || !lastReportText) return;
+    const ok = await copyToClipboard(lastReportText);
+    setToast(ok ? 'Copied.' : 'Copy failed (browser blocked clipboard).');
+  });
+
+  // Keep boxplot geometry aligned after resize
+  let lastNums = [];
+  let lastBad = 0;
+  const _render = render;
+  render = function(nums, bad){
+    lastNums = nums;
+    lastBad = bad;
+    _render(nums, bad);
+  };
+
+  window.addEventListener('resize', () => {
+    if (!lastNums || lastNums.length === 0) return;
+    _render(lastNums, lastBad);
+    hideTip();
+  });
+
+  // Attach interactions once
+  attachBoxInteractions();
 </script>
-
 </body>
 </html>
