@@ -3,9 +3,9 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Quick Statistics — Enter Numbers</title>
+  <title>Quick Statistics — Two Variables</title>
 
-  <!-- Chart.js (histogram + density) -->
+  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 
   <style>
@@ -18,23 +18,15 @@
     h1{ font-size:22px; margin:6px 0 10px; }
     .sub{ color:var(--muted); margin:0 0 16px; }
 
-    .grid2{ display:grid; grid-template-columns:1.1fr 0.9fr; gap:14px; }
-    .grid3{
-      display:grid;
-      grid-template-columns: 0.70fr 1.80fr 0.85fr; /* boxplot gets most width */
-      gap:14px;
-      align-items:start;
-    }
-    @media (max-width:980px){
-      .grid2{ grid-template-columns:1fr; }
-      .grid3{ grid-template-columns:1fr; }
-    }
+    .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+    @media (max-width:980px){ .grid2{ grid-template-columns:1fr; } }
 
     .card{ background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px; box-shadow:0 8px 20px rgba(0,0,0,.25); }
     textarea{
-      width:100%; min-height:160px; resize:vertical; background:#0e1524; border:1px solid var(--line);
+      width:100%; min-height:140px; resize:vertical; background:#0e1524; border:1px solid var(--line);
       color:var(--text); border-radius:12px; padding:12px; font-size:14px; line-height:1.35; outline:none;
     }
+
     .row{ display:flex; gap:10px; flex-wrap:wrap; margin-top:10px; align-items:center; }
     button{ border:1px solid var(--line); background:#0e1524; color:var(--text); padding:10px 12px; border-radius:12px; cursor:pointer; }
     button.primary{ background:var(--btn); border-color:transparent; }
@@ -47,6 +39,16 @@
     .toast{ margin-left:auto; color:var(--muted); font-size:13px; }
     .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
 
+    .plots3{ display:grid; grid-template-columns: 0.75fr 0.75fr 1.5fr; gap:14px; align-items:start; }
+    @media (max-width:980px){ .plots3{ grid-template-columns:1fr; } }
+
+    /* smaller hist/density */
+    .hSmall{ height:140px !important; }
+    .dSmall{ height:120px !important; }
+
+    /* boxplot: wide */
+    canvas.boxCanvas{ width:100%; height:210px; display:block; touch-action:none; }
+
     .stats{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px; }
     @media (max-width:520px){ .stats{ grid-template-columns:1fr; } }
     .kv{ border:1px solid var(--line); border-radius:12px; padding:10px; background:#0e1524; }
@@ -56,30 +58,14 @@
     .note{ margin-top:12px; padding:10px 12px; border-radius:12px; border:1px solid var(--line); background:#0e1524; color:var(--text); }
     .note .title{ font-weight:650; margin-bottom:6px; }
 
-    #hist{ height:150px !important; }
-    #density{ height:130px !important; }
-
-    /* Boxplot canvas */
-    #boxCanvas{ width:100%; height:220px; display:block; touch-action:none; }
-
-    /* Tooltip */
     .tip{
-      position: fixed;
-      z-index: 9999;
-      display: none;
-      max-width: 340px;
-      background: #0e1524;
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      padding: 10px 12px;
-      color: var(--text);
-      box-shadow: 0 12px 28px rgba(0,0,0,.35);
-      pointer-events: none;
-      font-size: 12.5px;
-      line-height: 1.25;
+      position: fixed; z-index: 9999; display:none; max-width: 360px;
+      background:#0e1524; border:1px solid var(--line); border-radius:12px; padding:10px 12px;
+      color:var(--text); box-shadow:0 12px 28px rgba(0,0,0,.35); pointer-events:none;
+      font-size:12.5px; line-height:1.25;
     }
-    .tip .t{ font-weight: 650; margin-bottom: 6px; }
-    .tip .m{ color: var(--muted); }
+    .tip .t{ font-weight:650; margin-bottom:6px; }
+    .tip .m{ color:var(--muted); }
     .tip .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
 
     /* -------------------- ADDED: PayPal donate button styled like buttons -------------------- */
@@ -105,83 +91,128 @@
 
 <body>
   <div class="wrap">
-    <h1>Enter numbers → histogram + density + Tukey boxplot</h1>
+    <h1>Quick Statistical Summary (One or Two Variables)</h1>
     <p class="sub">
-      Paste numbers below (separators: comma, semicolon, whitespace, or newline). All computations run locally in your browser.
+      Paste numbers for <strong>Variable X</strong> and <strong>Variable Y</strong> (separators: comma, semicolon, whitespace, newline).
+      All computations run locally in your browser.
     </p>
 
     <div class="grid2">
       <div class="card">
-        <label for="data"><strong>Data</strong></label>
-        <textarea id="data" placeholder="Example: 1, 2, 2, 3, 3, 4, 100"></textarea>
-
-        <div class="row">
-          <button class="primary" id="analyze">Analyze</button>
-          <button id="example">Load example</button>
-          <button id="clear">Clear</button>
-          <button class="success" id="copyReport" disabled>Copy report</button>
-
-          <!-- -------------------- ADDED: PayPal donate button -------------------- -->
-          <a
-            class="btnLike primary"
-            href="https://www.paypal.me/JHolm169"
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="Donate via PayPal"
-            title="Donate via PayPal"
-          >
-            Donate (PayPal)
-          </a>
-
-          <span class="toast" id="toast">—</span>
+        <div class="titleRow">
+          <strong>Variable X</strong>
+          <span class="small">independent distribution</span>
         </div>
-
-        <div class="meta" id="parseInfo">—</div>
+        <textarea id="dataX" placeholder="Example: 1, 2, 2, 3, 3, 4, 100"></textarea>
+        <div class="meta" id="parseX">—</div>
       </div>
 
       <div class="card">
         <div class="titleRow">
-          <strong>Histogram</strong>
-          <span class="small">Binning: Freedman–Diaconis (Tukey IQR; fallback: √n)</span>
+          <strong>Variable Y</strong>
+          <span class="small">independent distribution</span>
         </div>
-        <canvas id="hist" height="150"></canvas>
+        <textarea id="dataY" placeholder="Example: 5, 6, 7, 8, 9, 10"></textarea>
+        <div class="meta" id="parseY">—</div>
+      </div>
+    </div>
+
+    <div style="height:12px"></div>
+
+    <div class="card">
+      <div class="row">
+        <button class="primary" id="analyze">Analyze</button>
+        <button id="example">Load example</button>
+        <button id="clear">Clear</button>
+        <button class="success" id="copyReport" disabled>Copy combined report</button>
+
+        <!-- -------------------- ADDED: PayPal donate button -------------------- -->
+        <a
+          class="btnLike primary"
+          href="https://www.paypal.me/JHolm169"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Donate via PayPal"
+          title="Donate via PayPal"
+        >
+          Donate (PayPal)
+        </a>
+
+        <span class="toast" id="toast">—</span>
+      </div>
+      <div class="small" style="margin-top:8px;">
+        If both X and Y are provided, a scatter plot is computed using paired observations by index:
+        <span class="mono">(x₁,y₁), (x₂,y₂), …</span> up to <span class="mono">min(nX,nY)</span>.
       </div>
     </div>
 
     <div style="height:14px"></div>
 
-    <div class="grid3">
+    <div class="plots3">
+      <!-- X -->
       <div class="card">
         <div class="titleRow">
-          <strong>Density</strong>
-          <span class="small">KDE (Silverman bandwidth)</span>
+          <strong>X: Histogram</strong>
+          <span class="small">Freedman–Diaconis (Tukey IQR)</span>
         </div>
-        <canvas id="density" height="130"></canvas>
+        <canvas id="xHist" class="hSmall" height="140"></canvas>
       </div>
-
       <div class="card">
         <div class="titleRow">
-          <strong>Tukey boxplot</strong>
+          <strong>X: Density</strong>
+          <span class="small">KDE (Silverman)</span>
+        </div>
+        <canvas id="xDen" class="dSmall" height="120"></canvas>
+      </div>
+      <div class="card">
+        <div class="titleRow">
+          <strong>X: Tukey boxplot</strong>
           <span class="small">hover/tap: box, outliers, whisker tips</span>
         </div>
-        <canvas id="boxCanvas" width="1200" height="220"></canvas>
-        <div class="small" style="margin-top:10px;">
-          Quartiles: Tukey (median of halves). Outliers: outside Tukey fences.
-        </div>
+        <canvas id="xBox" class="boxCanvas" width="1200" height="210"></canvas>
+        <div id="xStats" class="stats"></div>
+        <div id="xInterp" class="note" style="display:none;"></div>
       </div>
 
+      <!-- Y -->
       <div class="card">
-        <strong>Summary statistics</strong>
-        <div class="stats" id="stats"></div>
-        <div class="note" id="interpretation" style="display:none;"></div>
-        <div class="small" style="margin-top:10px;">
-          Tip: add a single extreme value and compare how the <em>mean</em> changes while the <em>median</em> remains stable.
+        <div class="titleRow">
+          <strong>Y: Histogram</strong>
+          <span class="small">Freedman–Diaconis (Tukey IQR)</span>
         </div>
+        <canvas id="yHist" class="hSmall" height="140"></canvas>
+      </div>
+      <div class="card">
+        <div class="titleRow">
+          <strong>Y: Density</strong>
+          <span class="small">KDE (Silverman)</span>
+        </div>
+        <canvas id="yDen" class="dSmall" height="120"></canvas>
+      </div>
+      <div class="card">
+        <div class="titleRow">
+          <strong>Y: Tukey boxplot</strong>
+          <span class="small">hover/tap: box, outliers, whisker tips</span>
+        </div>
+        <canvas id="yBox" class="boxCanvas" width="1200" height="210"></canvas>
+        <div id="yStats" class="stats"></div>
+        <div id="yInterp" class="note" style="display:none;"></div>
       </div>
     </div>
 
+    <div style="height:14px"></div>
+
+    <div class="card">
+      <div class="titleRow">
+        <strong>X vs Y: Scatter + regression</strong>
+        <span class="small" id="xyNote">Provide both X and Y to view relationship.</span>
+      </div>
+      <canvas id="xyScatter" height="260"></canvas>
+      <div class="small" style="margin-top:10px;" id="xyStats">—</div>
+    </div>
+
     <p class="small" style="margin-top:14px;">
-      This is a single-file static page (no backend required). It can be hosted for free on GitHub Pages / Cloudflare Pages / Netlify.
+      Single-file static page (no backend). Hosting: GitHub Pages / Cloudflare Pages / Netlify.
     </p>
   </div>
 
@@ -209,7 +240,8 @@
     const tokens = cleaned.split(/[,\s]+/).filter(Boolean);
     let bad = 0;
     const nums = [];
-    for (const t of tokens) {
+    for (const t0 of tokens) {
+      const t = t0;
       const n = Number(t.replace(',', '.'));
       if (Number.isFinite(n)) nums.push(n);
       else bad++;
@@ -263,12 +295,10 @@
 
     const width = (max - min) / bins;
     const counts = new Array(bins).fill(0);
-
     for (const x of sorted) {
       const idx = Math.min(bins-1, Math.floor((x - min) / width));
       counts[idx]++;
     }
-
     const labels = [];
     for (let i=0;i<bins;i++){
       const a = min + i*width;
@@ -315,7 +345,6 @@
     const steps = 140;
     const xs = [];
     const ys = [];
-
     for (let i = 0; i <= steps; i++) {
       const x = min + (max - min) * (i / steps);
       let s = 0;
@@ -327,14 +356,75 @@
     return { xs, ys };
   }
 
-  // -------------------- Boxplot drawing + hit geometry --------------------
-  // We store everything needed for tooltip hit-testing.
-  let BOX_GEOM = null;
+  // -------------------- Boxplot drawing + tooltips --------------------
+  const tip = document.getElementById('boxTip');
+  function showTip(clientX, clientY, html){
+    tip.innerHTML = html;
+    const pad = 12;
+    tip.style.display = 'block';
+    const rect = tip.getBoundingClientRect();
+    let x = clientX + 14, y = clientY + 14;
+    if (x + rect.width + pad > window.innerWidth) x = clientX - rect.width - 14;
+    if (y + rect.height + pad > window.innerHeight) y = clientY - rect.height - 14;
+    tip.style.left = `${Math.max(pad, x)}px`;
+    tip.style.top  = `${Math.max(pad, y)}px`;
+  }
+  function hideTip(){ tip.style.display = 'none'; }
 
-  function drawBoxplot(canvas, summary){
+  function canvasClientToLocal(canvas, clientX, clientY){
+    const r = canvas.getBoundingClientRect();
+    const x = (clientX - r.left) * (canvas.clientWidth / r.width);
+    const y = (clientY - r.top)  * (canvas.clientHeight / r.height);
+    return { x, y };
+  }
+  function dist2(ax, ay, bx, by){
+    const dx = ax - bx, dy = ay - by;
+    return dx*dx + dy*dy;
+  }
+
+  // store geometry per canvas id
+  const BOX_GEOM = new Map();
+
+  function tipHTML_box(geom, label){
+    const s = geom.summary;
+    return `
+      <div class="t">${label}: Box summary</div>
+      <div><span class="m">Median:</span> <span class="mono">${fmt(s.medianVal)}</span></div>
+      <div class="m" style="margin-top:6px;">
+        n = <span class="mono">${s.n}</span>,
+        Q1 = <span class="mono">${fmt(s.q1)}</span>,
+        Q3 = <span class="mono">${fmt(s.q3)}</span>,
+        IQR = <span class="mono">${fmt(s.iqr)}</span>,
+        outliers = <span class="mono">${s.outliersCount}</span>
+      </div>
+    `;
+  }
+  function tipHTML_outlier(geom, label, v){
+    const s = geom.summary;
+    return `
+      <div class="t">${label}: Outlier</div>
+      <div><span class="m">Value:</span> <span class="mono">${fmt(v)}</span></div>
+      <div class="m" style="margin-top:6px;">
+        Tukey fences: <span class="mono">&lt; ${fmt(s.lo)}</span> or <span class="mono">&gt; ${fmt(s.hi)}</span>
+      </div>
+    `;
+  }
+  function tipHTML_whisker(label, side, value, fence){
+    const lbl = side === 'lower' ? 'Lower whisker' : 'Upper whisker';
+    const fenceLbl = side === 'lower' ? 'Lower fence' : 'Upper fence';
+    return `
+      <div class="t">${label}: ${lbl}</div>
+      <div><span class="m">Whisker value:</span> <span class="mono">${fmt(value)}</span></div>
+      <div class="m" style="margin-top:6px;">
+        ${fenceLbl}: <span class="mono">${fmt(fence)}</span>
+      </div>
+    `;
+  }
+
+  function drawBoxplot(canvas, label, summary){
     const ctx = canvas.getContext('2d');
 
-    // HiDPI crispness
+    // HiDPI
     const cssW = canvas.clientWidth || canvas.width;
     const cssH = canvas.clientHeight || canvas.height;
     const dpr = window.devicePixelRatio || 1;
@@ -346,7 +436,8 @@
     ctx.clearRect(0,0,w,h);
 
     const { n, min, max, q1, q3, iqr, medianVal, lo, hi, outliers } = summary;
-    BOX_GEOM = null;
+
+    BOX_GEOM.set(canvas.id, null);
 
     if (!Number.isFinite(min) || !Number.isFinite(max) || min === max){
       ctx.fillStyle = 'rgba(232,238,252,0.85)';
@@ -358,15 +449,11 @@
     const padX = 52;
     const midY = Math.round(h * 0.50);
 
-    const scaleMin = min;
-    const scaleMax = max;
-
     const xMap = (v) => {
-      const t = (v - scaleMin) / (scaleMax - scaleMin);
+      const t = (v - min) / (max - min);
       return padX + t * (w - 2*padX);
     };
 
-    // Whiskers (Tukey fences clipped to data)
     const whiskerLow = Math.max(min, lo);
     const whiskerHigh = Math.min(max, hi);
 
@@ -397,7 +484,7 @@
     ctx.fill();
     ctx.stroke();
 
-    // Median line
+    // Median
     ctx.strokeStyle = 'rgba(232,238,252,0.95)';
     ctx.lineWidth = 2.4;
     ctx.beginPath();
@@ -409,32 +496,18 @@
     ctx.strokeStyle = 'rgba(169,182,211,0.90)';
     ctx.lineWidth = 2.2;
 
-    ctx.beginPath();
-    ctx.moveTo(xQ1, midY);
-    ctx.lineTo(xWL, midY);
-    ctx.stroke();
-
-    ctx.beginPath();
-    ctx.moveTo(xQ3, midY);
-    ctx.lineTo(xWH, midY);
-    ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(xQ1, midY); ctx.lineTo(xWL, midY); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(xQ3, midY); ctx.lineTo(xWH, midY); ctx.stroke();
 
     // Caps
     const capH = 26;
     const yCapTop = midY - capH/2;
     const yCapBot = midY + capH/2;
 
-    ctx.beginPath();
-    ctx.moveTo(xWL, yCapTop);
-    ctx.lineTo(xWL, yCapBot);
-    ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(xWL, yCapTop); ctx.lineTo(xWL, yCapBot); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(xWH, yCapTop); ctx.lineTo(xWH, yCapBot); ctx.stroke();
 
-    ctx.beginPath();
-    ctx.moveTo(xWH, yCapTop);
-    ctx.lineTo(xWH, yCapBot);
-    ctx.stroke();
-
-    // Outliers (visible)
+    // Outliers
     const outR = 6;
     ctx.fillStyle = 'rgba(232,238,252,0.98)';
     ctx.strokeStyle = 'rgba(232,238,252,0.55)';
@@ -458,153 +531,69 @@
     const maxW = ctx.measureText(maxLabel).width;
     ctx.fillText(maxLabel, w - 10 - maxW, h - 12);
 
-    // Save geometry for tooltip hit-testing
-    BOX_GEOM = {
-      padX, midY,
+    BOX_GEOM.set(canvas.id, {
+      label,
       boxRect: { x1: xQ1, x2: xQ3, y1: yTop, y2: yBot },
-      outR,
-      outPoints, // {x,y,v}
+      outR, outPoints,
       whisker: {
         low:  { x: xWL, yTop: yCapTop, yBot: yCapBot, value: whiskerLow, fence: lo },
         high: { x: xWH, yTop: yCapTop, yBot: yCapBot, value: whiskerHigh, fence: hi }
       },
       summary: { n, q1, q3, iqr, medianVal, outliersCount: outliers.length, lo, hi }
-    };
+    });
   }
 
-  // -------------------- Tooltip logic --------------------
-  const tip = document.getElementById('boxTip');
-
-  function showTip(clientX, clientY, contentHTML){
-    tip.innerHTML = contentHTML;
-    const pad = 12;
-    tip.style.display = 'block';
-
-    const rect = tip.getBoundingClientRect();
-    let x = clientX + 14;
-    let y = clientY + 14;
-
-    if (x + rect.width + pad > window.innerWidth) x = clientX - rect.width - 14;
-    if (y + rect.height + pad > window.innerHeight) y = clientY - rect.height - 14;
-
-    tip.style.left = `${Math.max(pad, x)}px`;
-    tip.style.top  = `${Math.max(pad, y)}px`;
-  }
-
-  function hideTip(){ tip.style.display = 'none'; }
-
-  function canvasClientToLocal(canvas, clientX, clientY){
-    const r = canvas.getBoundingClientRect();
-    const x = (clientX - r.left) * (canvas.clientWidth / r.width);
-    const y = (clientY - r.top)  * (canvas.clientHeight / r.height);
-    return { x, y };
-  }
-
-  function dist2(ax, ay, bx, by){
-    const dx = ax - bx, dy = ay - by;
-    return dx*dx + dy*dy;
-  }
-
-  // Priority: outlier point > whisker tip > box area
+  // Priority: outlier > whisker > box
   function hitTestBoxplot(canvas, clientX, clientY){
-    if (!BOX_GEOM) return { kind: 'none' };
+    const geom = BOX_GEOM.get(canvas.id);
+    if (!geom) return { kind:'none' };
+
     const { x, y } = canvasClientToLocal(canvas, clientX, clientY);
-    const g = BOX_GEOM;
 
-    // 1) Outliers: check nearest within radius tolerance
-    const tol = 6; // extra pixels tolerance
-    const r = g.outR + tol;
+    // Outliers
+    const tol = 6;
+    const r = geom.outR + tol;
     const r2 = r*r;
-
     let best = null;
-    for (const p of g.outPoints){
-      const d = dist2(x, y, p.x, p.y);
-      if (d <= r2 && (!best || d < best.d)) best = { kind:'outlier', d, v: p.v };
+    for (const p of geom.outPoints){
+      const d = dist2(x,y,p.x,p.y);
+      if (d <= r2 && (!best || d < best.d)) best = { kind:'outlier', v: p.v, d };
     }
     if (best) return best;
 
-    // 2) Whisker tips (caps): check near xWL/xWH and within cap y-range (+tolerance)
-    const xTol = 10;
-    const yTol = 8;
+    // Whisker tips
+    const xTol = 10, yTol = 8;
+    const wl = geom.whisker.low;
+    const wh = geom.whisker.high;
 
-    const wl = g.whisker.low;
-    const wh = g.whisker.high;
-
-    const hitWhiskerLow =
-      Math.abs(x - wl.x) <= xTol &&
-      y >= (wl.yTop - yTol) && y <= (wl.yBot + yTol);
-
-    if (hitWhiskerLow) {
+    if (Math.abs(x - wl.x) <= xTol && y >= (wl.yTop - yTol) && y <= (wl.yBot + yTol)){
       return { kind:'whisker', side:'lower', value: wl.value, fence: wl.fence };
     }
-
-    const hitWhiskerHigh =
-      Math.abs(x - wh.x) <= xTol &&
-      y >= (wh.yTop - yTol) && y <= (wh.yBot + yTol);
-
-    if (hitWhiskerHigh) {
+    if (Math.abs(x - wh.x) <= xTol && y >= (wh.yTop - yTol) && y <= (wh.yBot + yTol)){
       return { kind:'whisker', side:'upper', value: wh.value, fence: wh.fence };
     }
 
-    // 3) Box area
-    const b = g.boxRect;
+    // Box
+    const b = geom.boxRect;
     const pad = 6;
-    const hitBox = (x >= b.x1 - pad && x <= b.x2 + pad && y >= b.y1 - pad && y <= b.y2 + pad);
-    if (hitBox) return { kind:'box' };
-
+    if (x >= b.x1 - pad && x <= b.x2 + pad && y >= b.y1 - pad && y <= b.y2 + pad){
+      return { kind:'box' };
+    }
     return { kind:'none' };
   }
 
-  function tipHTML_box(){
-    const s = BOX_GEOM.summary;
-    return `
-      <div class="t">Boxplot summary</div>
-      <div><span class="m">Median:</span> <span class="mono">${fmt(s.medianVal)}</span></div>
-      <div class="m" style="margin-top:6px;">
-        n = <span class="mono">${s.n}</span>,
-        Q1 = <span class="mono">${fmt(s.q1)}</span>,
-        Q3 = <span class="mono">${fmt(s.q3)}</span>,
-        IQR = <span class="mono">${fmt(s.iqr)}</span>,
-        outliers = <span class="mono">${s.outliersCount}</span>
-      </div>
-    `;
-  }
-
-  function tipHTML_outlier(v){
-    const s = BOX_GEOM.summary;
-    return `
-      <div class="t">Outlier</div>
-      <div><span class="m">Value:</span> <span class="mono">${fmt(v)}</span></div>
-      <div class="m" style="margin-top:6px;">
-        Tukey fences: <span class="mono">&lt; ${fmt(s.lo)}</span> or <span class="mono">&gt; ${fmt(s.hi)}</span>
-      </div>
-    `;
-  }
-
-  function tipHTML_whisker(side, value, fence){
-    const label = side === 'lower' ? 'Lower whisker' : 'Upper whisker';
-    const fenceLabel = side === 'lower' ? 'Lower fence' : 'Upper fence';
-    return `
-      <div class="t">${label}</div>
-      <div><span class="m">Whisker value:</span> <span class="mono">${fmt(value)}</span></div>
-      <div class="m" style="margin-top:6px;">
-        ${fenceLabel}: <span class="mono">${fmt(fence)}</span>
-      </div>
-    `;
-  }
-
-  function attachBoxInteractions(){
-    const canvas = document.getElementById('boxCanvas');
-
-    const handlePointer = (clientX, clientY) => {
+  function attachBoxInteractions(canvas){
+    const handle = (clientX, clientY) => {
+      const geom = BOX_GEOM.get(canvas.id);
+      if (!geom) { hideTip(); return; }
       const hit = hitTestBoxplot(canvas, clientX, clientY);
       if (hit.kind === 'none') { hideTip(); return; }
-      if (hit.kind === 'outlier') showTip(clientX, clientY, tipHTML_outlier(hit.v));
-      else if (hit.kind === 'whisker') showTip(clientX, clientY, tipHTML_whisker(hit.side, hit.value, hit.fence));
-      else showTip(clientX, clientY, tipHTML_box());
+      if (hit.kind === 'outlier') showTip(clientX, clientY, tipHTML_outlier(geom, geom.label, hit.v));
+      else if (hit.kind === 'whisker') showTip(clientX, clientY, tipHTML_whisker(geom.label, hit.side, hit.value, hit.fence));
+      else showTip(clientX, clientY, tipHTML_box(geom, geom.label));
     };
 
-    canvas.addEventListener('mousemove', (e) => handlePointer(e.clientX, e.clientY));
+    canvas.addEventListener('mousemove', (e) => handle(e.clientX, e.clientY));
     canvas.addEventListener('mouseleave', () => hideTip());
 
     const onTouchMove = (ev) => {
@@ -613,29 +602,49 @@
       const hit = hitTestBoxplot(canvas, t.clientX, t.clientY);
       if (hit.kind === 'none') { hideTip(); return; }
       ev.preventDefault();
-      if (hit.kind === 'outlier') showTip(t.clientX, t.clientY, tipHTML_outlier(hit.v));
-      else if (hit.kind === 'whisker') showTip(t.clientX, t.clientY, tipHTML_whisker(hit.side, hit.value, hit.fence));
-      else showTip(t.clientX, t.clientY, tipHTML_box());
+      handle(t.clientX, t.clientY);
     };
-
     canvas.addEventListener('touchstart', onTouchMove, { passive:false });
     canvas.addEventListener('touchmove',  onTouchMove, { passive:false });
     canvas.addEventListener('touchend',   () => hideTip());
     canvas.addEventListener('touchcancel',() => hideTip());
   }
 
-  // -------------------- UI + Charts --------------------
-  const elData = document.getElementById('data');
-  const elParseInfo = document.getElementById('parseInfo');
-  const elStats = document.getElementById('stats');
-  const elInterp = document.getElementById('interpretation');
-  const elToast = document.getElementById('toast');
-  const btnCopy = document.getElementById('copyReport');
+  // -------------------- Regression & correlation --------------------
+  function pearsonR(xs, ys){
+    const n = Math.min(xs.length, ys.length);
+    if (n < 2) return NaN;
+    let sx=0, sy=0;
+    for (let i=0;i<n;i++){ sx += xs[i]; sy += ys[i]; }
+    const mx = sx/n, my = sy/n;
+    let sxx=0, syy=0, sxy=0;
+    for (let i=0;i<n;i++){
+      const dx = xs[i]-mx, dy = ys[i]-my;
+      sxx += dx*dx; syy += dy*dy; sxy += dx*dy;
+    }
+    if (sxx <= 0 || syy <= 0) return NaN;
+    return sxy / Math.sqrt(sxx*syy);
+  }
 
-  let chartHist, chartDensity;
-  let lastReportText = '';
-  let lastHasData = false;
+  function linearRegression(xs, ys){
+    const n = Math.min(xs.length, ys.length);
+    if (n < 2) return { slope: NaN, intercept: NaN };
+    let sx=0, sy=0;
+    for (let i=0;i<n;i++){ sx += xs[i]; sy += ys[i]; }
+    const mx = sx/n, my = sy/n;
+    let sxx=0, sxy=0;
+    for (let i=0;i<n;i++){
+      const dx = xs[i]-mx;
+      sxx += dx*dx;
+      sxy += dx*(ys[i]-my);
+    }
+    if (sxx <= 0) return { slope: NaN, intercept: NaN };
+    const slope = sxy / sxx;
+    const intercept = my - slope*mx;
+    return { slope, intercept };
+  }
 
+  // -------------------- UI helpers --------------------
   function statCard(k, v){
     const div = document.createElement('div');
     div.className = 'kv';
@@ -643,41 +652,35 @@
     return div;
   }
 
-  function setToast(msg){ elToast.textContent = msg; }
+  // chart instances
+  const charts = {
+    xHist:null, xDen:null,
+    yHist:null, yDen:null,
+    xy:null
+  };
 
-  function buildReportText(summary){
-    const { n, min, max, meanVal, medianVal, sd, q1, q3, iqr, lo, hi, outliersCount, skew } = summary;
-    const sdPart = Number.isFinite(sd) ? ` (SD = ${fmt(sd)})` : '';
-    const outPart = (outliersCount > 0)
-      ? ` Outliers were detected using Tukey’s rule (values < ${fmt(lo)} or > ${fmt(hi)}; count = ${outliersCount}).`
-      : ` No outliers were detected using Tukey’s rule (fences: < ${fmt(lo)} or > ${fmt(hi)}).`;
-
-    return (
-      `Dataset summary (n = ${n}). The distribution is ${skew.short}. ` +
-      `Median = ${fmt(medianVal)} (IQR = ${fmt(iqr)}; Q1 = ${fmt(q1)}, Q3 = ${fmt(q3)}). ` +
-      `Mean = ${fmt(meanVal)}${sdPart}. Range: min = ${fmt(min)}, max = ${fmt(max)}.` +
-      outPart
-    );
+  function destroyChart(key){
+    if (charts[key]) charts[key].destroy();
+    charts[key] = null;
   }
 
-  function render(nums, bad){
-    const boxCanvas = document.getElementById('boxCanvas');
+  // -------------------- Render one variable --------------------
+  function renderVariable(prefix, label, nums, bad){
+    const parseEl = document.getElementById(prefix === 'x' ? 'parseX' : 'parseY');
+    const statsEl = document.getElementById(prefix + 'Stats');
+    const interpEl = document.getElementById(prefix + 'Interp');
 
+    // clear charts if empty
     if (nums.length === 0){
-      elParseInfo.textContent = 'Enter at least one numeric value.';
-      elStats.innerHTML = '';
-      elInterp.style.display = 'none';
-      if (chartHist) chartHist.destroy();
-      if (chartDensity) chartDensity.destroy();
-      chartHist = chartDensity = null;
+      parseEl.textContent = `No data. (Ignored ${bad} invalid token(s).)`;
+      statsEl.innerHTML = '';
+      interpEl.style.display = 'none';
+      destroyChart(prefix + 'Hist');
+      destroyChart(prefix + 'Den');
+      const boxCanvas = document.getElementById(prefix + 'Box');
       boxCanvas.getContext('2d').clearRect(0,0,boxCanvas.width,boxCanvas.height);
-      BOX_GEOM = null;
-      hideTip();
-      setToast('—');
-      btnCopy.disabled = true;
-      lastReportText = '';
-      lastHasData = false;
-      return;
+      BOX_GEOM.set(boxCanvas.id, null);
+      return null;
     }
 
     const sorted = [...nums].sort((a,b)=>a-b);
@@ -687,32 +690,28 @@
     const meanVal = mean(sorted);
     const medianVal = median(sorted);
     const sd = sampleStd(sorted);
-
     const { q1, q3 } = tukeyQuartiles(sorted);
     const iqr = q3 - q1;
-
     const lo = q1 - 1.5*iqr;
     const hi = q3 + 1.5*iqr;
     const outliers = sorted.filter(x => x < lo || x > hi);
-
     const skew = skewSummary(sorted);
 
-    elParseInfo.textContent = `Parsed ${n} number(s). Ignored ${bad} invalid token(s).`;
+    parseEl.textContent = `Parsed ${n} number(s). Ignored ${bad} invalid token(s).`;
 
-    // Stats cards
-    elStats.innerHTML = '';
-    elStats.appendChild(statCard('n', `${n}`));
-    elStats.appendChild(statCard('min', `${fmt(min)}`));
-    elStats.appendChild(statCard('max', `${fmt(max)}`));
-    elStats.appendChild(statCard('mean', `${fmt(meanVal)}`));
-    elStats.appendChild(statCard('median', `${fmt(medianVal)}`));
-    elStats.appendChild(statCard('sample SD', `${Number.isFinite(sd) ? fmt(sd) : '—'}`));
-    elStats.appendChild(statCard('Q1 (25%)', `${fmt(q1)}`));
-    elStats.appendChild(statCard('Q3 (75%)', `${fmt(q3)}`));
-    elStats.appendChild(statCard('IQR', `${fmt(iqr)}`));
-    elStats.appendChild(statCard('Tukey outliers', outliers.length ? `${outliers.length}` : '0'));
+    // stats cards
+    statsEl.innerHTML = '';
+    statsEl.appendChild(statCard('n', `${n}`));
+    statsEl.appendChild(statCard('min', `${fmt(min)}`));
+    statsEl.appendChild(statCard('max', `${fmt(max)}`));
+    statsEl.appendChild(statCard('mean', `${fmt(meanVal)}`));
+    statsEl.appendChild(statCard('median', `${fmt(medianVal)}`));
+    statsEl.appendChild(statCard('sample SD', `${Number.isFinite(sd) ? fmt(sd) : '—'}`));
+    statsEl.appendChild(statCard('Q1 (25%)', `${fmt(q1)}`));
+    statsEl.appendChild(statCard('Q3 (75%)', `${fmt(q3)}`));
+    statsEl.appendChild(statCard('IQR', `${fmt(iqr)}`));
+    statsEl.appendChild(statCard('Tukey outliers', outliers.length ? `${outliers.length}` : '0'));
 
-    // Interpretation
     const meanVsMed = (meanVal > medianVal)
       ? 'Mean > median, consistent with a right-tailed influence of larger values.'
       : (meanVal < medianVal)
@@ -723,81 +722,163 @@
       ? `Outliers (Tukey fences): values < ${fmt(lo)} or > ${fmt(hi)} (count = ${outliers.length}).`
       : `No outliers detected by Tukey fences (< ${fmt(lo)} or > ${fmt(hi)}).`;
 
-    elInterp.style.display = 'block';
-    elInterp.innerHTML = `
+    interpEl.style.display = 'block';
+    interpEl.innerHTML = `
       <div class="title">Interpretation</div>
       <div>• Distribution: <span class="mono">${skew.label}</span>.</div>
       <div>• ${meanVsMed}</div>
       <div>• ${outTxt}</div>
     `;
 
-    // Histogram
+    // histogram
     const fd = freedmanDiaconisBins(sorted);
     const bins = Math.min(60, Math.max(1, fd.bins));
     const hist = histogram(sorted, bins);
-
-    const ctxH = document.getElementById('hist');
-    if (chartHist) chartHist.destroy();
-    chartHist = new Chart(ctxH, {
+    const histCanvas = document.getElementById(prefix + 'Hist');
+    destroyChart(prefix + 'Hist');
+    charts[prefix + 'Hist'] = new Chart(histCanvas, {
       type: 'bar',
       data: {
         labels: hist.labels,
-        datasets: [{
-          label: 'Count',
-          data: hist.counts,
-          borderWidth: 1
-        }]
+        datasets: [{ label:'Count', data: hist.counts, borderWidth: 1 }]
       },
       options: {
-        responsive: true,
-        plugins: { legend: { display: false } },
-        scales: {
-          x: { ticks: { display: false } },
-          y: { beginAtZero: true }
-        }
+        responsive:true,
+        plugins:{ legend:{ display:false } },
+        scales:{ x:{ ticks:{ display:false } }, y:{ beginAtZero:true } }
       }
     });
 
-    // Density
+    // density
     const den = densityKDE(sorted);
-    const ctxD = document.getElementById('density');
-    if (chartDensity) chartDensity.destroy();
-    chartDensity = new Chart(ctxD, {
+    const denCanvas = document.getElementById(prefix + 'Den');
+    destroyChart(prefix + 'Den');
+    charts[prefix + 'Den'] = new Chart(denCanvas, {
       type: 'line',
       data: {
         labels: den.xs.map(x => fmt(x)),
-        datasets: [{
-          label: 'Density',
-          data: den.ys,
-          pointRadius: 0,
-          borderWidth: 2,
-          tension: 0.25
-        }]
+        datasets: [{ label:'Density', data: den.ys, pointRadius:0, borderWidth:2, tension:0.25 }]
       },
       options: {
-        responsive: true,
-        plugins: { legend: { display: false } },
-        scales: {
-          x: { ticks: { display: false } },
-          y: { beginAtZero: true }
+        responsive:true,
+        plugins:{ legend:{ display:false } },
+        scales:{ x:{ ticks:{ display:false } }, y:{ beginAtZero:true } }
+      }
+    });
+
+    // boxplot (custom)
+    const boxCanvas = document.getElementById(prefix + 'Box');
+    drawBoxplot(boxCanvas, label, {
+      n, min, max, q1, q3, iqr, medianVal, lo, hi, outliers
+    });
+
+    return {
+      label, n, min, max, meanVal, medianVal, sd, q1, q3, iqr, lo, hi, outliersCount: outliers.length, skew
+    };
+  }
+
+  // -------------------- Scatter render --------------------
+  function renderScatter(xNums, yNums){
+    const noteEl = document.getElementById('xyNote');
+    const statsEl = document.getElementById('xyStats');
+    const canvas = document.getElementById('xyScatter');
+
+    destroyChart('xy');
+
+    if (xNums.length === 0 || yNums.length === 0){
+      noteEl.textContent = 'Provide both X and Y to view relationship.';
+      statsEl.textContent = '—';
+      // draw empty axes? keep blank
+      charts.xy = new Chart(canvas, {
+        type: 'scatter',
+        data: { datasets: [] },
+        options: {
+          responsive:true,
+          plugins:{ legend:{ display:false } },
+          scales:{ x:{ }, y:{ } }
+        }
+      });
+      return { report:'No X–Y relationship computed (missing X or Y).' };
+    }
+
+    const nPairs = Math.min(xNums.length, yNums.length);
+    const usedX = xNums.slice(0, nPairs);
+    const usedY = yNums.slice(0, nPairs);
+
+    const r = pearsonR(usedX, usedY);
+    const reg = linearRegression(usedX, usedY);
+
+    const pts = [];
+    for (let i=0;i<nPairs;i++) pts.push({ x: usedX[i], y: usedY[i] });
+
+    const xmin = Math.min(...usedX), xmax = Math.max(...usedX);
+    const x1 = xmin, x2 = xmax;
+    const y1 = reg.intercept + reg.slope * x1;
+    const y2 = reg.intercept + reg.slope * x2;
+
+    const lenNote = (xNums.length !== yNums.length)
+      ? `Using ${nPairs} paired observations (min(nX,nY)).`
+      : `Using ${nPairs} paired observations.`;
+
+    noteEl.textContent = lenNote;
+
+    const rTxt = Number.isFinite(r) ? fmt(r) : '—';
+    const slopeTxt = Number.isFinite(reg.slope) ? fmt(reg.slope) : '—';
+    const intTxt = Number.isFinite(reg.intercept) ? fmt(reg.intercept) : '—';
+
+    statsEl.innerHTML =
+      `Pearson correlation <span class="mono">r = ${rTxt}</span>. ` +
+      `Linear regression: <span class="mono">y = ${slopeTxt}·x + ${intTxt}</span>.`;
+
+    charts.xy = new Chart(canvas, {
+      type: 'scatter',
+      data: {
+        datasets: [
+          {
+            label: 'Pairs',
+            data: pts,
+            pointRadius: 3,
+            pointHoverRadius: 5
+          },
+          {
+            label: 'Regression line',
+            type: 'line',
+            data: [{ x: x1, y: y1 }, { x: x2, y: y2 }],
+            pointRadius: 0,
+            borderWidth: 2,
+            tension: 0
+          }
+        ]
+      },
+      options: {
+        responsive:true,
+        plugins:{ legend:{ display:false } },
+        scales:{
+          x:{ title:{ display:true, text:'X' } },
+          y:{ title:{ display:true, text:'Y' } }
         }
       }
     });
 
-    // Boxplot (with full hit-geometry)
-    drawBoxplot(boxCanvas, {
-      n, min, max, q1, q3, iqr, medianVal,
-      lo, hi, outliers
-    });
+    return {
+      report: `X–Y relationship: paired by index, nPairs=${nPairs}, Pearson r=${rTxt}, regression y=${slopeTxt}·x+${intTxt}.`
+    };
+  }
 
-    // Report copy
-    lastReportText = buildReportText({
-      n, min, max, meanVal, medianVal, sd, q1, q3, iqr,
-      lo, hi, outliersCount: outliers.length, skew
-    });
-    lastHasData = true;
-    btnCopy.disabled = false;
-    setToast('Ready.');
+  // -------------------- Report text --------------------
+  function buildReportText(one, title){
+    if (!one) return `${title}: no data.`;
+    const sdPart = Number.isFinite(one.sd) ? ` (SD = ${fmt(one.sd)})` : '';
+    const outPart = (one.outliersCount > 0)
+      ? ` Outliers by Tukey’s rule (< ${fmt(one.lo)} or > ${fmt(one.hi)}; count = ${one.outliersCount}).`
+      : ` No outliers by Tukey’s rule (fences: < ${fmt(one.lo)} or > ${fmt(one.hi)}).`;
+
+    return (
+      `${title} (n = ${one.n}). Distribution: ${one.skew.short}. ` +
+      `Median = ${fmt(one.medianVal)} (IQR = ${fmt(one.iqr)}; Q1 = ${fmt(one.q1)}, Q3 = ${fmt(one.q3)}). ` +
+      `Mean = ${fmt(one.meanVal)}${sdPart}. Range: min = ${fmt(one.min)}, max = ${fmt(one.max)}.` +
+      outPart
+    );
   }
 
   // -------------------- Clipboard --------------------
@@ -823,47 +904,85 @@
     }
   }
 
-  // -------------------- Events --------------------
-  document.getElementById('analyze').addEventListener('click', () => {
-    const { nums, bad } = parseNumbers(elData.value);
-    render(nums, bad);
-  });
+  // -------------------- Main render --------------------
+  const elX = document.getElementById('dataX');
+  const elY = document.getElementById('dataY');
+  const elToast = document.getElementById('toast');
+  const btnCopy = document.getElementById('copyReport');
+
+  let lastReport = '';
+  function setToast(msg){ elToast.textContent = msg; }
+
+  function analyze(){
+    hideTip();
+
+    const px = parseNumbers(elX.value);
+    const py = parseNumbers(elY.value);
+
+    const xSummary = renderVariable('x', 'X', px.nums, px.bad);
+    const ySummary = renderVariable('y', 'Y', py.nums, py.bad);
+    const xy = renderScatter(px.nums, py.nums);
+
+    lastReport =
+      buildReportText(xSummary, 'Variable X') + '\n' +
+      buildReportText(ySummary, 'Variable Y') + '\n' +
+      xy.report;
+
+    btnCopy.disabled = false;
+    setToast('Ready.');
+  }
+
+  // -------------------- Wire up --------------------
+  document.getElementById('analyze').addEventListener('click', analyze);
 
   document.getElementById('example').addEventListener('click', () => {
-    elData.value = "1, 2, 2, 3, 3, 4, 100\n5 6 7 8 9\n10";
-    const { nums, bad } = parseNumbers(elData.value);
-    render(nums, bad);
+    elX.value = "1, 2, 2, 3, 3, 4, 100\n5 6 7 8 9\n10";
+    elY.value = "1, 1, 2, 2, 3, 5, 8, 13, 21\n34 55 89";
+    analyze();
   });
 
   document.getElementById('clear').addEventListener('click', () => {
-    elData.value = "";
-    render([], 0);
+    elX.value = "";
+    elY.value = "";
+    document.getElementById('parseX').textContent = '—';
+    document.getElementById('parseY').textContent = '—';
+    document.getElementById('xStats').innerHTML = '';
+    document.getElementById('yStats').innerHTML = '';
+    document.getElementById('xInterp').style.display = 'none';
+    document.getElementById('yInterp').style.display = 'none';
+    document.getElementById('xyNote').textContent = 'Provide both X and Y to view relationship.';
+    document.getElementById('xyStats').textContent = '—';
+
+    destroyChart('xHist'); destroyChart('xDen');
+    destroyChart('yHist'); destroyChart('yDen');
+    destroyChart('xy');
+
+    ['xBox','yBox'].forEach(id=>{
+      const c = document.getElementById(id);
+      c.getContext('2d').clearRect(0,0,c.width,c.height);
+      BOX_GEOM.set(id, null);
+    });
+
+    btnCopy.disabled = true;
+    lastReport = '';
+    setToast('—');
   });
 
   btnCopy.addEventListener('click', async () => {
-    if (!lastHasData || !lastReportText) return;
-    const ok = await copyToClipboard(lastReportText);
+    const ok = await copyToClipboard(lastReport || '');
     setToast(ok ? 'Copied.' : 'Copy failed (browser blocked clipboard).');
   });
 
-  // Keep boxplot geometry aligned after resize
-  let lastNums = [];
-  let lastBad = 0;
-  const _render = render;
-  render = function(nums, bad){
-    lastNums = nums;
-    lastBad = bad;
-    _render(nums, bad);
-  };
+  // Attach box interactions (both)
+  attachBoxInteractions(document.getElementById('xBox'));
+  attachBoxInteractions(document.getElementById('yBox'));
 
+  // keep crisp after resize (recompute)
   window.addEventListener('resize', () => {
-    if (!lastNums || lastNums.length === 0) return;
-    _render(lastNums, lastBad);
-    hideTip();
+    // only re-run if something was analyzed
+    if (btnCopy.disabled) return;
+    analyze();
   });
-
-  // Attach interactions once
-  attachBoxInteractions();
 </script>
 </body>
 </html>
