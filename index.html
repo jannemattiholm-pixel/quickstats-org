@@ -1,1148 +1,220 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Quick Statistical Summary (One or Two Variables)</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Quick Statistics — Enter Numbers</title>
 
-  <!-- Chart.js (KDE + optional scatter/regression) -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 
-  <style>
-    :root{
-      --bg:#0b0f17;
-      --card:#121a28;
-      --text:#e8eefc;
-      --muted:#a9b6d3;
-      --line:#23304a;
-      --btn:#1f6feb;
-      --ok:#2ea043;
-      --warn:#d29922;
-    }
-    *{ box-sizing:border-box; }
-    body{
-      margin:0;
-      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
-      background:var(--bg);
-      color:var(--text);
-    }
-    .wrap{ max-width:1280px; margin:0 auto; padding:18px; }
-    h1{ font-size:22px; margin:0 0 6px; }
-    .sub{ color:var(--muted); margin:0 0 14px; line-height:1.35; }
+<style>
+:root{
+  --bg:#0b0f17; --card:#121a28; --text:#e8eefc; --muted:#a9b6d3; --line:#23304a;
+  --btn:#1f6feb; --ok:#2ea043;
+}
 
-    .topbar{
-      display:flex;
-      align-items:flex-start;
-      justify-content:space-between;
-      gap:14px;
-      margin-bottom:6px;
-    }
+body{
+  margin:0;
+  font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+  background:var(--bg);
+  color:var(--text);
+}
 
-    /* Donate button (simple + reliable) */
-    .donateBtn{
-      text-decoration:none;
-      display:inline-flex;
-      align-items:center;
-      gap:10px;
-      padding:10px 14px;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,.10);
-      background: linear-gradient(135deg, rgba(31,111,235,.28), rgba(46,160,67,.18));
-      box-shadow: 0 10px 24px rgba(0,0,0,.35);
-      color: var(--text);
-      transition: transform .12s ease, filter .12s ease, box-shadow .12s ease;
-      user-select:none;
-      white-space:nowrap;
-      flex:0 0 auto;
-    }
-    .donateBtn:hover{
-      transform: translateY(-1px);
-      filter: brightness(1.08);
-      box-shadow: 0 12px 28px rgba(0,0,0,.45);
-    }
-    .donateIcon{
-      width:34px; height:34px;
-      border-radius:50%;
-      display:grid;
-      place-items:center;
-      background: rgba(31,111,235,.25);
-      border:1px solid rgba(255,255,255,.10);
-      flex:0 0 auto;
-      font-size:16px;
-    }
-    .donateTxt{ line-height:1.05; }
-    .donateTxt .t1{ font-weight:650; font-size:13px; }
-    .donateTxt .t2{ font-size:12px; color:var(--muted); margin-top:2px; }
-    @media (max-width:520px){ .donateTxt .t2{ display:none; } }
+.wrap{ max-width:1280px; margin:0 auto; padding:18px; }
+h1{ font-size:22px; margin:6px 0 10px; }
+.sub{ color:var(--muted); margin:0 0 16px; }
 
-    .chips{ display:flex; gap:8px; flex-wrap:wrap; margin:8px 0 14px; }
-    .chip{
-      font-size:12.5px;
-      color:var(--muted);
-      border:1px solid var(--line);
-      background:#0e1524;
-      padding:7px 10px;
-      border-radius:999px;
-    }
+.grid2{ display:grid; grid-template-columns:1.1fr 0.9fr; gap:14px; }
+.grid3{
+  display:grid;
+  grid-template-columns: 0.70fr 1.80fr 0.85fr;
+  gap:14px;
+  align-items:start;
+}
 
-    .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
-    @media (max-width:980px){ .grid2{ grid-template-columns:1fr; } }
+@media (max-width:980px){
+  .grid2{ grid-template-columns:1fr; }
+  .grid3{ grid-template-columns:1fr; }
+}
 
-    .gridCharts{
-      display:grid;
-      grid-template-columns: 1fr 1fr;
-      gap:14px;
-      align-items:start;
-    }
-    @media (max-width:980px){ .gridCharts{ grid-template-columns:1fr; } }
+.card{
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:14px;
+  box-shadow:0 8px 20px rgba(0,0,0,.25);
+}
 
-    .card{
-      background:var(--card);
-      border:1px solid var(--line);
-      border-radius:14px;
-      padding:14px;
-      box-shadow:0 8px 20px rgba(0,0,0,.25);
-    }
+textarea{
+  width:100%;
+  min-height:160px;
+  resize:vertical;
+  background:#0e1524;
+  border:1px solid var(--line);
+  color:var(--text);
+  border-radius:12px;
+  padding:12px;
+  font-size:14px;
+  line-height:1.35;
+  outline:none;
+}
 
-    .titleRow{ display:flex; align-items:baseline; justify-content:space-between; gap:10px; }
-    .small{ font-size:13px; color:var(--muted); }
+.row{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  margin-top:10px;
+  align-items:center;
+}
 
-    textarea{
-      width:100%;
-      min-height:150px;
-      resize:vertical;
-      background:#0e1524;
-      border:1px solid var(--line);
-      color:var(--text);
-      border-radius:12px;
-      padding:12px;
-      font-size:14px;
-      line-height:1.35;
-      outline:none;
-    }
+button{
+  border:1px solid var(--line);
+  background:#0e1524;
+  color:var(--text);
+  padding:10px 12px;
+  border-radius:12px;
+  cursor:pointer;
+}
 
-    .row{ display:flex; gap:10px; flex-wrap:wrap; margin-top:10px; align-items:center; }
-    button{
-      border:1px solid var(--line);
-      background:#0e1524;
-      color:var(--text);
-      padding:10px 12px;
-      border-radius:12px;
-      cursor:pointer;
-    }
-    button.primary{ background:var(--btn); border-color:transparent; }
-    button.success{ background:var(--ok); border-color:transparent; }
-    button:hover{ filter:brightness(1.08); }
+button.primary{ background:var(--btn); border-color:transparent; }
+button.success{ background:var(--ok); border-color:transparent; }
+button:hover{ filter:brightness(1.08); }
 
-    .toast{ margin-left:auto; color:var(--muted); font-size:13px; }
-    .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+/* 🔵 PayPal button style */
+a.btnLike{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  text-decoration:none;
+  border:1px solid var(--line);
+  background:#0e1524;
+  color:var(--text);
+  padding:10px 12px;
+  border-radius:12px;
+  cursor:pointer;
+  white-space:nowrap;
+}
+a.btnLike.primary{
+  background:var(--btn);
+  border-color:transparent;
+}
+a.btnLike:hover{
+  filter:brightness(1.08);
+}
 
-    .meta{ margin-top:10px; color:var(--muted); font-size:13px; }
+.meta{ margin-top:10px; color:var(--muted); font-size:13px; }
+.small{ font-size:13px; color:var(--muted); }
 
-    .statsGrid{
-      display:grid;
-      grid-template-columns: 1fr 1fr;
-      gap:10px;
-      margin-top:10px;
-    }
-    @media (max-width:720px){ .statsGrid{ grid-template-columns:1fr; } }
+.stats{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+  margin-top:10px;
+}
 
-    .statBlockTitle{
-      display:flex; justify-content:space-between; align-items:baseline;
-      gap:10px; margin-bottom:8px;
-    }
-    .kvGrid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-    @media (max-width:520px){ .kvGrid{ grid-template-columns:1fr; } }
-    .kv{
-      border:1px solid var(--line);
-      border-radius:12px;
-      padding:10px;
-      background:#0e1524;
-    }
-    .kv .k{ color:var(--muted); font-size:12px; }
-    .kv .v{ font-size:16px; margin-top:2px; }
+@media (max-width:520px){
+  .stats{ grid-template-columns:1fr; }
+}
 
-    .note{
-      margin-top:12px;
-      padding:10px 12px;
-      border-radius:12px;
-      border:1px solid var(--line);
-      background:#0e1524;
-      color:var(--text);
-    }
-    .note .title{ font-weight:650; margin-bottom:6px; }
+.kv{
+  border:1px solid var(--line);
+  border-radius:12px;
+  padding:10px;
+  background:#0e1524;
+}
 
-    /* Charts */
-    .chartBox{ position:relative; height:220px; }
-    .chartBoxTall{ position:relative; height:260px; }
-    canvas{ width:100% !important; height:100% !important; display:block; }
-
-    /* Boxplot canvases */
-    .boxWrap{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
-    @media (max-width:980px){ .boxWrap{ grid-template-columns:1fr; } }
-    .boxCanvas{
-      width:100%;
-      height:230px;
-      display:block;
-      background:#0e1524;
-      border:1px solid var(--line);
-      border-radius:12px;
-      touch-action:none;
-    }
-
-    /* Single global tooltip (fixed, no label pile-up) */
-    .tip{
-      position: fixed;
-      z-index: 9999;
-      display: none;
-      max-width: 360px;
-      background: #0e1524;
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      padding: 10px 12px;
-      color: var(--text);
-      box-shadow: 0 12px 28px rgba(0,0,0,.35);
-      pointer-events: none;
-      font-size: 12.5px;
-      line-height: 1.25;
-    }
-    .tip .t{ font-weight: 650; margin-bottom: 6px; }
-    .tip .m{ color: var(--muted); }
-    .hr{ height:14px; }
-  </style>
+.kv .k{ color:var(--muted); font-size:12px; }
+.kv .v{ font-size:16px; margin-top:2px; }
+</style>
 </head>
 
 <body>
-  <div class="wrap">
-    <div class="topbar">
-      <div>
-        <h1>Quick Statistical Summary (One or Two Variables)</h1>
-        <p class="sub">
-          Paste numbers into <b>X</b> (comma/semicolon/space/newline separated). Optionally paste <b>Y</b>.
-          Everything runs locally in your browser — <b>no uploads</b>, no server processing, no storage, no tracking.
-        </p>
-      </div>
+<div class="wrap">
+<h1>Enter numbers → histogram + density + Tukey boxplot</h1>
+<p class="sub">
+Paste numbers below (comma, semicolon, whitespace, or newline separated).
+</p>
 
-      <a class="donateBtn" href="https://paypal.me/JHolm169" target="_blank" rel="noopener">
-        <span class="donateIcon">❤</span>
-        <span class="donateTxt">
-          <div class="t1">Support this project</div>
-          <div class="t2">paypal.me/JHolm169</div>
-        </span>
-      </a>
-    </div>
+<div class="grid2">
+<div class="card">
 
-    <div class="chips">
-      <span class="chip">Runs locally in your browser</span>
-      <span class="chip">No accounts • no database</span>
-      <span class="chip">Tukey boxplots + outliers</span>
-      <span class="chip">KDE density (Silverman bandwidth)</span>
-      <span class="chip">Optional X–Y scatter + regression</span>
-    </div>
+<label for="data"><strong>Data</strong></label>
+<textarea id="data" placeholder="Example: 1, 2, 2, 3, 3, 4, 100"></textarea>
 
-    <!-- Inputs -->
-    <div class="grid2">
-      <div class="card">
-        <div class="titleRow">
-          <strong>Variable X</strong>
-          <span class="small">required</span>
-        </div>
-        <textarea id="dataX" placeholder="Example: 1, 2, 2, 3, 3, 4, 100"></textarea>
-        <div class="row">
-          <button class="primary" id="analyze">Analyze</button>
-          <button id="example">Load example</button>
-          <button id="clear">Clear</button>
-          <button class="success" id="copyReport" disabled>Copy report</button>
-          <span class="toast" id="toast">—</span>
-        </div>
-        <div class="meta" id="parseInfo">—</div>
-      </div>
+<div class="row">
+<button class="primary" id="analyze">Analyze</button>
+<button id="example">Load example</button>
+<button id="clear">Clear</button>
+<button class="success" id="copyReport" disabled>Copy report</button>
 
-      <div class="card">
-        <div class="titleRow">
-          <strong>Variable Y (optional)</strong>
-          <span class="small">if same length as X → paired scatter + regression</span>
-        </div>
-        <textarea id="dataY" placeholder="Paste Y values here (optional)"></textarea>
-        <div class="meta" id="pairInfo">—</div>
-        <div class="note">
-          <div class="title">Tip</div>
-          If X and Y have the same count, the tool treats them as paired observations for regression.
-          Otherwise, X and Y are analyzed separately (boxplot + density + summary).
-        </div>
-      </div>
-    </div>
+<!-- 🔵 PAYPAL DONATE BUTTON -->
+<a
+  class="btnLike primary"
+  href="https://www.paypal.me/JHolm169"
+  target="_blank"
+  rel="noopener noreferrer"
+  aria-label="Donate via PayPal"
+  title="Donate via PayPal">
+  Donate (PayPal)
+</a>
 
-    <div class="hr"></div>
+<span class="toast" id="toast">—</span>
+</div>
 
-    <!-- Boxplots -->
-    <div class="card">
-      <div class="titleRow">
-        <strong>Boxplots (Tukey) + outliers</strong>
-        <span class="small">Hover/tap points or box/whiskers for a clean tooltip</span>
-      </div>
-      <div class="boxWrap" style="margin-top:10px;">
-        <div>
-          <div class="titleRow" style="margin-bottom:8px;">
-            <strong>Boxplot — X</strong>
-            <span class="small" id="outX">—</span>
-          </div>
-          <canvas id="boxX" class="boxCanvas"></canvas>
-        </div>
-        <div>
-          <div class="titleRow" style="margin-bottom:8px;">
-            <strong>Boxplot — Y</strong>
-            <span class="small" id="outY">shown when Y has data</span>
-          </div>
-          <canvas id="boxY" class="boxCanvas"></canvas>
-        </div>
-      </div>
-      <div class="small" style="margin-top:10px;">
-        Quartiles: Tukey (median of halves). Outliers: values outside fences <span class="mono">(Q1 − 1.5·IQR)</span> or <span class="mono">(Q3 + 1.5·IQR)</span>.
-      </div>
-    </div>
+<div class="meta" id="parseInfo">—</div>
+</div>
 
-    <div class="hr"></div>
+<div class="card">
+<strong>Histogram</strong>
+<canvas id="hist" height="150"></canvas>
+</div>
+</div>
 
-    <!-- Density charts -->
-    <div class="gridCharts">
-      <div class="card">
-        <div class="titleRow">
-          <strong>Density (KDE) — X</strong>
-          <span class="small" id="bwX">—</span>
-        </div>
-        <div class="chartBox">
-          <canvas id="kdeX"></canvas>
-        </div>
-      </div>
+<div style="height:14px"></div>
 
-      <div class="card">
-        <div class="titleRow">
-          <strong>Density (KDE) — Y</strong>
-          <span class="small" id="bwY">shown when Y has data</span>
-        </div>
-        <div class="chartBox">
-          <canvas id="kdeY"></canvas>
-        </div>
-      </div>
-    </div>
+<div class="grid3">
+<div class="card">
+<strong>Density</strong>
+<canvas id="density" height="130"></canvas>
+</div>
 
-    <div class="hr"></div>
+<div class="card">
+<strong>Tukey boxplot</strong>
+<canvas id="boxCanvas" width="1200" height="220"></canvas>
+</div>
 
-    <!-- Scatter + regression -->
-    <div class="card" id="scatterCard" style="display:none;">
-      <div class="titleRow">
-        <strong>X–Y scatter + fitted line</strong>
-        <span class="small" id="regInfo">—</span>
-      </div>
-      <div class="chartBoxTall">
-        <canvas id="scatter"></canvas>
-      </div>
-    </div>
+<div class="card">
+<strong>Summary statistics</strong>
+<div class="stats" id="stats"></div>
+</div>
+</div>
 
-    <div class="hr"></div>
+<p class="small" style="margin-top:14px;">
+This is a static single-file page. You can host it free on GitHub Pages / Netlify.
+</p>
 
-    <!-- Summary -->
-    <div class="card">
-      <div class="titleRow">
-        <strong>Summary statistics</strong>
-        <span class="small">n, min/max, mean, median, quartiles, IQR, SD, Tukey outliers</span>
-      </div>
-
-      <div class="statsGrid">
-        <div>
-          <div class="statBlockTitle">
-            <strong>X</strong>
-            <span class="small" id="sumXmeta">—</span>
-          </div>
-          <div class="kvGrid" id="sumX"></div>
-        </div>
-
-        <div>
-          <div class="statBlockTitle">
-            <strong>Y</strong>
-            <span class="small" id="sumYmeta">shown when Y has data</span>
-          </div>
-          <div class="kvGrid" id="sumY"></div>
-        </div>
-      </div>
-
-      <div class="note" id="reportHint" style="margin-top:12px;">
-        <div class="title">Report</div>
-        Use <b>Copy report</b> to copy a short plain-text summary (great for emails / notes).
-      </div>
-    </div>
-
-    <p class="small" style="margin-top:14px;">
-      Single-file static page. Works on GitHub Pages. If something looks “cached”, hard-refresh: <span class="mono">Ctrl+F5</span>.
-    </p>
-  </div>
-
-  <div id="tip" class="tip"></div>
+</div>
 
 <script>
-/* =========================================================
-   Helpers: formatting, parsing
-========================================================= */
-const fmt = (x) => {
-  if (!Number.isFinite(x)) return '—';
-  const ax = Math.abs(x);
-  let s;
-  if (ax === 0) s = '0';
-  else if (ax < 0.001 || ax >= 10000) s = x.toExponential(3);
-  else if (ax >= 1000) s = x.toFixed(2);
-  else s = x.toFixed(4);
-  return s.replace(/\.?0+$/,'');
-};
-
 function parseNumbers(raw){
-  const cleaned = (raw || '')
-    .replace(/[，]/g, ',')
-    .replace(/[;]/g, ',')
-    .replace(/\r/g, '\n')
-    .trim();
-
-  if (!cleaned) return { nums: [], bad: 0 };
-
-  const tokens = cleaned.split(/[,\s]+/).filter(Boolean);
-  let bad = 0;
+  const tokens = raw.split(/[,\s;]+/).filter(Boolean);
   const nums = [];
-  for (const t of tokens){
-    const n = Number(t.replace(',', '.'));
-    if (Number.isFinite(n)) nums.push(n);
+  let bad = 0;
+  for(const t of tokens){
+    const n = Number(t);
+    if(Number.isFinite(n)) nums.push(n);
     else bad++;
   }
-  return { nums, bad };
+  return {nums,bad};
 }
 
-/* =========================================================
-   Core stats
-========================================================= */
-function mean(a){ return a.reduce((s,x)=>s+x,0)/a.length; }
-
-function median(sorted){
-  const n = sorted.length;
-  const mid = Math.floor(n/2);
-  return (n % 2) ? sorted[mid] : (sorted[mid-1] + sorted[mid]) / 2;
-}
-
-function tukeyQuartiles(sorted){
-  const n = sorted.length;
-  if (n === 0) return { q1: NaN, q3: NaN };
-  const lower = sorted.slice(0, Math.floor(n/2));
-  const upper = sorted.slice(Math.ceil(n/2));
-  return { q1: median(lower), q3: median(upper) };
-}
-
-function sampleStd(a){
-  const n = a.length;
-  if (n < 2) return NaN;
-  const m = mean(a);
-  let s2 = 0;
-  for (const x of a) s2 += (x-m)*(x-m);
-  return Math.sqrt(s2/(n-1));
-}
-
-function skewSummary(sorted){
-  const m = mean(sorted);
-  const med = median(sorted);
-  const min = sorted[0], max = sorted[sorted.length-1];
-  const left = med - min;
-  const right = max - med;
-  const delta = m - med;
-  const tailRatio = right / (left === 0 ? 1e-9 : left);
-
-  if (Math.abs(delta) < 1e-12 && Math.abs(tailRatio - 1) < 0.15) {
-    return { label:'approximately symmetric', short:'approximately symmetric' };
-  }
-  if (delta > 0 && tailRatio > 1.2) return { label:'right-skewed', short:'right-skewed' };
-  if (delta < 0 && tailRatio < 0.8) return { label:'left-skewed', short:'left-skewed' };
-  if (delta > 0) return { label:'likely right-skewed', short:'likely right-skewed' };
-  if (delta < 0) return { label:'likely left-skewed', short:'likely left-skewed' };
-  return { label:'no clear skewness pattern', short:'no clear skewness pattern' };
-}
-
-function summarize(nums){
-  if (!nums || nums.length === 0) return null;
-  const sorted = [...nums].sort((a,b)=>a-b);
-  const n = sorted.length;
-
-  const min = sorted[0], max = sorted[n-1];
-  const meanVal = mean(sorted);
-  const medianVal = median(sorted);
-  const sd = sampleStd(sorted);
-
-  const { q1, q3 } = tukeyQuartiles(sorted);
-  const iqr = q3 - q1;
-
-  const lo = q1 - 1.5*iqr;
-  const hi = q3 + 1.5*iqr;
-
-  const outliers = sorted.filter(x => x < lo || x > hi);
-  const skew = skewSummary(sorted);
-
-  // whiskers are clipped to data
-  const whiskerLow = Math.max(min, lo);
-  const whiskerHigh = Math.min(max, hi);
-
-  return {
-    sorted, n, min, max, meanVal, medianVal, sd, q1, q3, iqr, lo, hi,
-    whiskerLow, whiskerHigh, outliers, skew
-  };
-}
-
-/* =========================================================
-   KDE (Gaussian) with Silverman bandwidth
-========================================================= */
-function kdeGaussianKernel(z){
-  return Math.exp(-0.5*z*z) / Math.sqrt(2*Math.PI);
-}
-
-function kdeDensity(sorted){
-  const n = sorted.length;
-  const min = sorted[0], max = sorted[n-1];
-  if (min === max) return { xs:[min], ys:[1], h:1 };
-
-  const sd = sampleStd(sorted);
-  let h = (Number.isFinite(sd) && sd > 0)
-    ? 1.06 * sd * Math.pow(n, -1/5)
-    : (max - min) / 10;
-
-  if (!Number.isFinite(h) || h <= 0) h = (max - min) / 10;
-
-  const steps = 160;
-  const xs = [];
-  const ys = [];
-
-  for (let i=0;i<=steps;i++){
-    const x = min + (max - min) * (i/steps);
-    let s = 0;
-    for (const xi of sorted){
-      s += kdeGaussianKernel((x - xi)/h);
-    }
-    const y = s / (n*h);
-    xs.push(x);
-    ys.push(y);
-  }
-  return { xs, ys, h };
-}
-
-/* =========================================================
-   UI elements
-========================================================= */
-const elX = document.getElementById('dataX');
-const elY = document.getElementById('dataY');
-
-const elParseInfo = document.getElementById('parseInfo');
-const elPairInfo = document.getElementById('pairInfo');
-const elToast = document.getElementById('toast');
-
-const elOutX = document.getElementById('outX');
-const elOutY = document.getElementById('outY');
-
-const elBwX = document.getElementById('bwX');
-const elBwY = document.getElementById('bwY');
-
-const elSumX = document.getElementById('sumX');
-const elSumY = document.getElementById('sumY');
-const elSumXmeta = document.getElementById('sumXmeta');
-const elSumYmeta = document.getElementById('sumYmeta');
-
-const scatterCard = document.getElementById('scatterCard');
-const elRegInfo = document.getElementById('regInfo');
-
-const btnCopy = document.getElementById('copyReport');
-
-function setToast(msg){ elToast.textContent = msg; }
-
-function statCard(k,v){
-  const div = document.createElement('div');
-  div.className = 'kv';
-  div.innerHTML = `<div class="k">${k}</div><div class="v">${v}</div>`;
-  return div;
-}
-
-/* =========================================================
-   Chart.js instances
-========================================================= */
-let chartKdeX = null;
-let chartKdeY = null;
-let chartScatter = null;
-
-/* =========================================================
-   Clean fixed tooltip (used for both boxplots)
-========================================================= */
-const tip = document.getElementById('tip');
-
-function showTip(clientX, clientY, html){
-  tip.innerHTML = html;
-  tip.style.display = 'block';
-
-  const pad = 12;
-  const rect = tip.getBoundingClientRect();
-
-  let x = clientX + 14;
-  let y = clientY + 14;
-
-  if (x + rect.width + pad > window.innerWidth) x = clientX - rect.width - 14;
-  if (y + rect.height + pad > window.innerHeight) y = clientY - rect.height - 14;
-
-  tip.style.left = `${Math.max(pad, x)}px`;
-  tip.style.top  = `${Math.max(pad, y)}px`;
-}
-function hideTip(){ tip.style.display = 'none'; }
-
-function canvasClientToLocal(canvas, clientX, clientY){
-  const r = canvas.getBoundingClientRect();
-  const x = (clientX - r.left) * (canvas.clientWidth / r.width);
-  const y = (clientY - r.top)  * (canvas.clientHeight / r.height);
-  return { x, y };
-}
-function dist2(ax,ay,bx,by){
-  const dx=ax-bx, dy=ay-by;
-  return dx*dx + dy*dy;
-}
-
-/* =========================================================
-   Boxplot renderer (two independent instances)
-========================================================= */
-function createBoxplot(canvas){
-  return {
-    canvas,
-    geom: null,
-    summary: null
-  };
-}
-
-function drawBoxplot(box, summary, label){
-  const canvas = box.canvas;
-  const ctx = canvas.getContext('2d');
-
-  // HiDPI
-  const cssW = canvas.clientWidth || 600;
-  const cssH = canvas.clientHeight || 230;
-  const dpr = window.devicePixelRatio || 1;
-  canvas.width = Math.round(cssW * dpr);
-  canvas.height = Math.round(cssH * dpr);
-  ctx.setTransform(dpr,0,0,dpr,0,0);
-
-  ctx.clearRect(0,0,cssW,cssH);
-  box.geom = null;
-  box.summary = summary;
-
-  // Empty state
-  if (!summary || !Number.isFinite(summary.min) || !Number.isFinite(summary.max)){
-    ctx.fillStyle = 'rgba(232,238,252,0.85)';
-    ctx.font = '14px system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif';
-    ctx.fillText(`No data for ${label}.`, 14, 22);
-    return;
-  }
-
-  const { n, min, max, q1, q3, iqr, medianVal, lo, hi, whiskerLow, whiskerHigh, outliers } = summary;
-
-  // If no variation
-  if (min === max){
-    ctx.fillStyle = 'rgba(232,238,252,0.85)';
-    ctx.font = '14px system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif';
-    ctx.fillText(`All values identical: ${fmt(min)} (${label}).`, 14, 22);
-    return;
-  }
-
-  const w = cssW, h = cssH;
-  const padX = 54;
-  const midY = Math.round(h * 0.52);
-
-  const xMap = (v) => {
-    const t = (v - min) / (max - min);
-    return padX + t * (w - 2*padX);
-  };
-
-  const xWL = xMap(whiskerLow);
-  const xWH = xMap(whiskerHigh);
-  const xQ1 = xMap(q1);
-  const xQ3 = xMap(q3);
-  const xMed = xMap(medianVal);
-
-  // Subtle grid baseline
-  ctx.strokeStyle = 'rgba(169,182,211,0.16)';
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(padX, midY);
-  ctx.lineTo(w - padX, midY);
-  ctx.stroke();
-
-  // Box
-  const boxH = Math.min(78, Math.max(60, Math.round(h * 0.34)));
-  const yTop = midY - boxH/2;
-  const yBot = midY + boxH/2;
-
-  ctx.fillStyle = 'rgba(31,111,235,0.18)';
-  ctx.strokeStyle = 'rgba(31,111,235,0.92)';
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.rect(xQ1, yTop, (xQ3 - xQ1), boxH);
-  ctx.fill();
-  ctx.stroke();
-
-  // Median
-  ctx.strokeStyle = 'rgba(232,238,252,0.95)';
-  ctx.lineWidth = 2.4;
-  ctx.beginPath();
-  ctx.moveTo(xMed, yTop);
-  ctx.lineTo(xMed, yBot);
-  ctx.stroke();
-
-  // Whiskers
-  ctx.strokeStyle = 'rgba(169,182,211,0.90)';
-  ctx.lineWidth = 2.2;
-
-  ctx.beginPath(); ctx.moveTo(xQ1, midY); ctx.lineTo(xWL, midY); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(xQ3, midY); ctx.lineTo(xWH, midY); ctx.stroke();
-
-  // Caps
-  const capH = 28;
-  const yCapTop = midY - capH/2;
-  const yCapBot = midY + capH/2;
-  ctx.beginPath(); ctx.moveTo(xWL, yCapTop); ctx.lineTo(xWL, yCapBot); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(xWH, yCapTop); ctx.lineTo(xWH, yCapBot); ctx.stroke();
-
-  // Outliers
-  const outR = 6;
-  ctx.fillStyle = 'rgba(232,238,252,0.98)';
-  ctx.strokeStyle = 'rgba(232,238,252,0.55)';
-  ctx.lineWidth = 1;
-
-  const outPoints = [];
-  for (const v of outliers){
-    const x = xMap(v);
-    outPoints.push({ x, y: midY, v });
-    ctx.beginPath();
-    ctx.arc(x, midY, outR, 0, Math.PI*2);
-    ctx.fill();
-    ctx.stroke();
-  }
-
-  // Axis min/max labels
-  ctx.fillStyle = 'rgba(169,182,211,0.90)';
-  ctx.font = '12px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace';
-
-  const minLabel = `min ${fmt(min)}`;
-  ctx.fillText(minLabel, 10, h - 12);
-
-  const maxLabel = `max ${fmt(max)}`;
-  const maxW = ctx.measureText(maxLabel).width;
-  ctx.fillText(maxLabel, w - 10 - maxW, h - 12);
-
-  // Store geometry for hit test
-  box.geom = {
-    padX, midY,
-    boxRect: { x1:xQ1, x2:xQ3, y1:yTop, y2:yBot },
-    outR,
-    outPoints,
-    whisker: {
-      low:  { x:xWL, yTop:yCapTop, yBot:yCapBot, value:whiskerLow, fence:lo },
-      high: { x:xWH, yTop:yCapTop, yBot:yCapBot, value:whiskerHigh, fence:hi }
-    }
-  };
-}
-
-function hitTestBox(box, clientX, clientY){
-  if (!box.geom || !box.summary) return { kind:'none' };
-
-  const canvas = box.canvas;
-  const g = box.geom;
-
-  const { x, y } = canvasClientToLocal(canvas, clientX, clientY);
-
-  // 1) Outlier points
-  const tol = 6;
-  const r = g.outR + tol;
-  const r2 = r*r;
-  let best = null;
-  for (const p of g.outPoints){
-    const d = dist2(x,y,p.x,p.y);
-    if (d <= r2 && (!best || d < best.d)) best = { kind:'outlier', d, v:p.v };
-  }
-  if (best) return best;
-
-  // 2) Whisker caps
-  const xTol = 10;
-  const yTol = 8;
-
-  const wl = g.whisker.low;
-  const wh = g.whisker.high;
-
-  const hitLow =
-    Math.abs(x - wl.x) <= xTol && y >= (wl.yTop - yTol) && y <= (wl.yBot + yTol);
-  if (hitLow) return { kind:'whisker', side:'lower', value:wl.value, fence:wl.fence };
-
-  const hitHigh =
-    Math.abs(x - wh.x) <= xTol && y >= (wh.yTop - yTol) && y <= (wh.yBot + yTol);
-  if (hitHigh) return { kind:'whisker', side:'upper', value:wh.value, fence:wh.fence };
-
-  // 3) Box area
-  const b = g.boxRect;
-  const pad = 6;
-  const hitBox = (x >= b.x1-pad && x <= b.x2+pad && y >= b.y1-pad && y <= b.y2+pad);
-  if (hitBox) return { kind:'box' };
-
-  return { kind:'none' };
-}
-
-function tipHTML_box(summary, label){
-  return `
-    <div class="t">${label} — boxplot summary</div>
-    <div><span class="m">Median:</span> <span class="mono">${fmt(summary.medianVal)}</span></div>
-    <div class="m" style="margin-top:6px;">
-      n = <span class="mono">${summary.n}</span>,
-      Q1 = <span class="mono">${fmt(summary.q1)}</span>,
-      Q3 = <span class="mono">${fmt(summary.q3)}</span>,
-      IQR = <span class="mono">${fmt(summary.iqr)}</span>,
-      outliers = <span class="mono">${summary.outliers.length}</span>
-    </div>
-  `;
-}
-function tipHTML_outlier(summary, label, v){
-  return `
-    <div class="t">${label} — outlier</div>
-    <div><span class="m">Value:</span> <span class="mono">${fmt(v)}</span></div>
-    <div class="m" style="margin-top:6px;">
-      Tukey fences: <span class="mono">&lt; ${fmt(summary.lo)}</span> or <span class="mono">&gt; ${fmt(summary.hi)}</span>
-    </div>
-  `;
-}
-function tipHTML_whisker(label, side, value, fence){
-  const label2 = side === 'lower' ? 'Lower whisker' : 'Upper whisker';
-  const fenceLabel = side === 'lower' ? 'Lower fence' : 'Upper fence';
-  return `
-    <div class="t">${label} — ${label2}</div>
-    <div><span class="m">Whisker value:</span> <span class="mono">${fmt(value)}</span></div>
-    <div class="m" style="margin-top:6px;">
-      ${fenceLabel}: <span class="mono">${fmt(fence)}</span>
-    </div>
-  `;
-}
-
-function attachBoxInteractions(box, label){
-  const canvas = box.canvas;
-
-  const handlePointer = (clientX, clientY) => {
-    const hit = hitTestBox(box, clientX, clientY);
-    if (hit.kind === 'none'){ hideTip(); return; }
-
-    if (hit.kind === 'outlier') showTip(clientX, clientY, tipHTML_outlier(box.summary, label, hit.v));
-    else if (hit.kind === 'whisker') showTip(clientX, clientY, tipHTML_whisker(label, hit.side, hit.value, hit.fence));
-    else showTip(clientX, clientY, tipHTML_box(box.summary, label));
-  };
-
-  canvas.addEventListener('mousemove', (e)=>handlePointer(e.clientX, e.clientY));
-  canvas.addEventListener('mouseleave', ()=>hideTip());
-
-  const onTouch = (ev) => {
-    if (!ev.touches || ev.touches.length === 0) return;
-    ev.preventDefault();
-    const t = ev.touches[0];
-    handlePointer(t.clientX, t.clientY);
-  };
-
-  canvas.addEventListener('touchstart', onTouch, { passive:false });
-  canvas.addEventListener('touchmove',  onTouch, { passive:false });
-  canvas.addEventListener('touchend',   ()=>hideTip());
-  canvas.addEventListener('touchcancel',()=>hideTip());
-}
-
-/* =========================================================
-   Regression (least squares) and scatter
-========================================================= */
-function regressionLine(x, y){
-  const n = x.length;
-  const mx = mean(x);
-  const my = mean(y);
-
-  let sxx = 0, sxy = 0, syy = 0;
-  for (let i=0;i<n;i++){
-    const dx = x[i] - mx;
-    const dy = y[i] - my;
-    sxx += dx*dx;
-    sxy += dx*dy;
-    syy += dy*dy;
-  }
-  const slope = (sxx === 0) ? NaN : (sxy / sxx);
-  const intercept = my - slope*mx;
-
-  // Pearson r
-  const r = (sxx === 0 || syy === 0) ? NaN : (sxy / Math.sqrt(sxx*syy));
-
-  const xmin = Math.min(...x);
-  const xmax = Math.max(...x);
-
-  return {
-    slope, intercept, r,
-    x1: xmin, y1: slope*xmin + intercept,
-    x2: xmax, y2: slope*xmax + intercept
-  };
-}
-
-/* =========================================================
-   Render everything
-========================================================= */
-const boxX = createBoxplot(document.getElementById('boxX'));
-const boxY = createBoxplot(document.getElementById('boxY'));
-
-attachBoxInteractions(boxX, 'X');
-attachBoxInteractions(boxY, 'Y');
-
-let lastReportText = '';
-let lastHasData = false;
-let lastState = null;
-
-function buildReportText(sumX, sumY, pairedInfo){
-  const lines = [];
-  const addVar = (label, s) => {
-    if (!s) return;
-    lines.push(`${label}: n=${s.n}, min=${fmt(s.min)}, max=${fmt(s.max)}, mean=${fmt(s.meanVal)}, median=${fmt(s.medianVal)}, Q1=${fmt(s.q1)}, Q3=${fmt(s.q3)}, IQR=${fmt(s.iqr)}, SD=${Number.isFinite(s.sd)?fmt(s.sd):'—'}, outliers=${s.outliers.length} (fences < ${fmt(s.lo)} or > ${fmt(s.hi)}), skew=${s.skew.short}.`);
-  };
-  lines.push(`Quick Statistical Summary (runs locally; no uploads).`);
-  addVar('X', sumX);
-  addVar('Y', sumY);
-
-  if (pairedInfo && pairedInfo.paired){
-    lines.push(`Paired regression (n=${pairedInfo.n}): r=${fmt(pairedInfo.r)}, slope=${fmt(pairedInfo.slope)}, intercept=${fmt(pairedInfo.intercept)}.`);
-  }
-  return lines.join('\n');
-}
-
-function renderAll(){
-  const px = parseNumbers(elX.value);
-  const py = parseNumbers(elY.value);
-
-  const sumX = summarize(px.nums);
-  const sumY = summarize(py.nums);
-
-  // Parse info
-  const xCount = px.nums.length;
-  const yCount = py.nums.length;
-
-  elParseInfo.textContent = xCount
-    ? `Parsed X: ${xCount} value(s). Ignored: ${px.bad}.`
-    : `Enter at least one numeric value in X.`;
-
-  elPairInfo.textContent = yCount
-    ? `Parsed Y: ${yCount} value(s). Ignored: ${py.bad}.`
-    : `Y is empty (optional).`;
-
-  // Boxplots
-  drawBoxplot(boxX, sumX, 'X');
-  elOutX.textContent = sumX ? `Outliers: ${sumX.outliers.length}` : '—';
-
-  if (sumY){
-    drawBoxplot(boxY, sumY, 'Y');
-    elOutY.textContent = `Outliers: ${sumY.outliers.length}`;
-  } else {
-    drawBoxplot(boxY, null, 'Y');
-    elOutY.textContent = 'shown when Y has data';
-  }
-
-  // KDE charts
-  const renderKDE = (chartRef, canvasId, sum, bwEl, emptyText) => {
-    const ctx = document.getElementById(canvasId);
-    if (!sum){
-      bwEl.textContent = emptyText;
-      if (chartRef) chartRef.destroy();
-      return null;
-    }
-    const den = kdeDensity(sum.sorted);
-    bwEl.textContent = `Silverman bw ≈ ${fmt(den.h)}`;
-
-    if (chartRef) chartRef.destroy();
-    const c = new Chart(ctx, {
-      type:'line',
-      data:{
-        labels: den.xs.map(v=>v),
-        datasets:[{
-          label:'Density',
-          data: den.ys.map((y,i)=>({x: den.xs[i], y})),
-          pointRadius:0,
-          borderWidth:2,
-          tension:0.25
-        }]
-      },
-      options:{
-        responsive:true,
-        maintainAspectRatio:false,
-        plugins:{ legend:{ display:false } },
-        scales:{
-          x:{
-            type:'linear',
-            ticks:{ color:'#a9b6d3' },
-            grid:{ color:'rgba(35,48,74,.6)' }
-          },
-          y:{
-            ticks:{ color:'#a9b6d3' },
-            grid:{ color:'rgba(35,48,74,.6)' },
-            beginAtZero:true
-          }
-        }
-      }
-    });
-    return c;
-  };
-
-  chartKdeX = renderKDE(chartKdeX, 'kdeX', sumX, elBwX, '—');
-  chartKdeY = renderKDE(chartKdeY, 'kdeY', sumY, elBwY, 'shown when Y has data');
-
-  // Summary cards
-  const fillSummary = (el, metaEl, s, emptyMeta) => {
-    el.innerHTML = '';
-    if (!s){
-      metaEl.textContent = emptyMeta;
-      return;
-    }
-    metaEl.textContent = `n=${s.n} • ${s.skew.short}`;
-    el.appendChild(statCard('n', `${s.n}`));
-    el.appendChild(statCard('min', `${fmt(s.min)}`));
-    el.appendChild(statCard('max', `${fmt(s.max)}`));
-    el.appendChild(statCard('mean', `${fmt(s.meanVal)}`));
-    el.appendChild(statCard('median', `${fmt(s.medianVal)}`));
-    el.appendChild(statCard('sample SD', `${Number.isFinite(s.sd)?fmt(s.sd):'—'}`));
-    el.appendChild(statCard('Q1 (25%)', `${fmt(s.q1)}`));
-    el.appendChild(statCard('Q3 (75%)', `${fmt(s.q3)}`));
-    el.appendChild(statCard('IQR', `${fmt(s.iqr)}`));
-    el.appendChild(statCard('Tukey outliers', `${s.outliers.length}`));
-  };
-
-  fillSummary(elSumX, elSumXmeta, sumX, '—');
-  fillSummary(elSumY, elSumYmeta, sumY, 'shown when Y has data');
-
-  // Scatter + regression (only if paired)
-  let pairedInfo = { paired:false };
-  if (sumX && sumY && xCount === yCount && xCount >= 2){
-    pairedInfo.paired = true;
-    pairedInfo.n = xCount;
-
-    const line = regressionLine(px.nums, py.nums);
-    pairedInfo.slope = line.slope;
-    pairedInfo.intercept = line.intercept;
-    pairedInfo.r = line.r;
-
-    scatterCard.style.display = 'block';
-    elRegInfo.textContent = `r ≈ ${fmt(line.r)}, slope ≈ ${fmt(line.slope)}, intercept ≈ ${fmt(line.intercept)} (paired n=${xCount})`;
-
-    const ctxS = document.getElementById('scatter');
-    if (chartScatter) chartScatter.destroy();
-
-    const pts = px.nums.map((x,i)=>({x, y: py.nums[i]}));
-    chartScatter = new Chart(ctxS, {
-      type:'scatter',
-      data:{
-        datasets:[
-          {
-            label:'points',
-            data: pts,
-            pointRadius:4
-          },
-          {
-            label:'fit',
-            type:'line',
-            data: [{x: line.x1, y: line.y1}, {x: line.x2, y: line.y2}],
-            pointRadius:0,
-            borderWidth:3,
-            tension:0
-          }
-        ]
-      },
-      options:{
-        responsive:true,
-        maintainAspectRatio:false,
-        plugins:{ legend:{ display:true, labels:{ color:'#a9b6d3' } } },
-        scales:{
-          x:{ type:'linear', ticks:{ color:'#a9b6d3' }, grid:{ color:'rgba(35,48,74,.6)' } },
-          y:{ ticks:{ color:'#a9b6d3' }, grid:{ color:'rgba(35,48,74,.6)' } }
-        }
-      }
-    });
-  } else {
-    scatterCard.style.display = 'none';
-    if (chartScatter){ chartScatter.destroy(); chartScatter = null; }
-    elRegInfo.textContent = '—';
-  }
-
-  // Report copy
-  lastReportText = buildReportText(sumX, sumY, pairedInfo);
-  lastHasData = !!sumX;
-  btnCopy.disabled = !lastHasData;
-
-  setToast(sumX ? 'Done.' : '—');
-
-  // save state for resize redraw
-  lastState = { x: elX.value, y: elY.value };
-}
-
-/* =========================================================
-   Clipboard
-========================================================= */
-async function copyToClipboard(text){
-  try{
-    await navigator.clipboard.writeText(text);
-    return true;
-  } catch(e){
-    try{
-      const ta = document.createElement('textarea');
-      ta.value = text;
-      ta.setAttribute('readonly','');
-      ta.style.position='absolute';
-      ta.style.left='-9999px';
-      document.body.appendChild(ta);
-      ta.select();
-      const ok = document.execCommand('copy');
-      document.body.removeChild(ta);
-      return ok;
-    } catch {
-      return false;
-    }
-  }
-}
-
-/* =========================================================
-   Events
-========================================================= */
-document.getElementById('analyze').addEventListener('click', () => {
-  hideTip();
-  renderAll();
+document.getElementById('analyze').addEventListener('click',()=>{
+  const {nums,bad}=parseNumbers(document.getElementById('data').value);
+  document.getElementById('parseInfo').textContent =
+    nums.length ? `Parsed ${nums.length} numbers. Ignored ${bad}.`
+                : "Enter numeric values.";
 });
-
-document.getElementById('example').addEventListener('click', () => {
-  elX.value = "3.8, 4.0, 2.8, -4.3, -1.5, 0.8, 2.5, 3.1, 1.9, -6.0, -0.6, -16.6, -3.5, -8.4";
-  elY.value = "2.1, 1.8, 2.6, -3.0, -0.8, 0.6, 1.7, 2.0, 1.4, -2.9, -0.5, -12.0, -2.8, -6.5";
-  hideTip();
-  renderAll();
-});
-
-document.getElementById('clear').addEventListener('click', () => {
-  elX.value = "";
-  elY.value = "";
-  hideTip();
-  renderAll();
-});
-
-btnCopy.addEventListener('click', async () => {
-  if (!lastHasData || !lastReportText) return;
-  const ok = await copyToClipboard(lastReportText);
-  setToast(ok ? 'Copied.' : 'Copy failed (browser blocked clipboard).');
-});
-
-// Re-render on resize (keeps axes + boxplots aligned)
-window.addEventListener('resize', () => {
-  if (!lastState) return;
-  // avoid tooltip stuck after layout change
-  hideTip();
-  renderAll();
-});
-
-/* =========================================================
-   Initial render
-========================================================= */
-renderAll();
 </script>
+
 </body>
 </html>
